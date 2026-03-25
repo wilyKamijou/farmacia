@@ -5,66 +5,92 @@ import { gql } from '@apollo/client';
 import { useAuth } from '../contexts/AuthContext';
 import { LogOut, UserPlus, Trash2, Shield } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
-import { 
-  GetAllPersonasResponse, 
-  CreatePersonaResponse, 
-  CreatePersonaVariables,
-  DeletePersonaResponse,
-  DeletePersonaVariables,
-  Enable2FAResponse,
-  Enable2FAVariables,
-  Persona 
-} from '../types/auth.types';
 
-// 👇 DEFINIR LAS QUERIES Y MUTACIONES DENTRO DEL ARCHIVO
-const GET_ALL_PERSONAS = gql`
+// ==================== TIPOS ====================
+interface Cliente {
+  id: string;
+  nombre: string;
+  apellido: string;
+  telefono: string;
+  activo: boolean;
+}
+
+interface GetAllClientesResponse {
+  allClientes: Cliente[];
+}
+
+interface CreateClienteResponse {
+  crearCliente: {
+    cliente: Cliente;
+    ok: boolean;
+    mensaje: string;
+  };
+}
+
+interface CreateClienteVariables {
+  nombre: string;
+  apellido: string;
+  telefono?: string;
+}
+
+interface DeleteClienteResponse {
+  eliminarCliente: {
+    ok: boolean;
+    mensaje: string;
+  };
+}
+
+interface DeleteClienteVariables {
+  id: string;
+}
+
+interface Enable2FAResponse {
+  enable2fa: {
+    success: boolean;
+    message: string;
+    qrCodeUrl: string;
+    secret: string;
+  };
+}
+
+interface Enable2FAVariables {
+  password: string;
+}
+
+// ==================== QUERIES Y MUTACIONES ====================
+const GET_ALL_CLIENTES = gql`
   query {
-    allPersonas {
+    allClientes {
       id
-      email
-      firstName
-      lastName
+      nombre
+      apellido
       telefono
-      fechaNacimiento
-      direccion
-      activo
-      is2faEnabled
     }
   }
 `;
 
-const CREATE_PERSONA = gql`
-  mutation CreatePersona(
-    $firstName: String!
-    $lastName: String!
-    $email: String!
-    $password: String!
-    $fechaNacimiento: Date!
-    $telefono: String
-    $direccion: String
-  ) {
-    crearPersona(
-      firstName: $firstName
-      lastName: $lastName
-      email: $email
-      password: $password
-      fechaNacimiento: $fechaNacimiento
+const CREATE_CLIENTE = gql`
+  mutation CreateCliente($nombre: String!, $apellido: String!, $telefono: String) {
+    crearCliente(
+      nombre: $nombre
+      apellido: $apellido
       telefono: $telefono
-      direccion: $direccion
     ) {
-      persona {
+      cliente {
         id
-        email
-        firstName
-        lastName
+        nombre
+        apellido
+        telefono
       }
+      ok
+      mensaje
     }
   }
 `;
 
-const DELETE_PERSONA = gql`
-  mutation DeletePersona($id: ID!) {
-    eliminarPersona(id: $id) {
+const DELETE_CLIENTE = gql`
+  mutation DeleteCliente($id: ID!) {
+    eliminarCliente(id: $id) {
       ok
       mensaje
     }
@@ -82,60 +108,53 @@ const ENABLE_2FA = gql`
   }
 `;
 
+// ==================== COMPONENTE PRINCIPAL ====================
 export const DashboardPage = () => {
   const { user, logout } = useAuth();
   const [showModal, setShowModal] = useState(false);
   const [show2FAModal, setShow2FAModal] = useState(false);
   const [qrCode, setQrCode] = useState('');
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    fechaNacimiento: '',
-    telefono: '',
-    direccion: ''
+    nombre: '',
+    apellido: '',
+    telefono: ''
   });
 
-  const { loading, error, data, refetch } = useQuery<GetAllPersonasResponse>(GET_ALL_PERSONAS);
-  const [createPersona] = useMutation<CreatePersonaResponse, CreatePersonaVariables>(CREATE_PERSONA);
-  const [deletePersona] = useMutation<DeletePersonaResponse, DeletePersonaVariables>(DELETE_PERSONA);
+  const { loading, error, data, refetch } = useQuery<GetAllClientesResponse>(GET_ALL_CLIENTES);
+  const [createCliente] = useMutation<CreateClienteResponse, CreateClienteVariables>(CREATE_CLIENTE);
+  const [deleteCliente] = useMutation<DeleteClienteResponse, DeleteClienteVariables>(DELETE_CLIENTE);
   const [enable2FA] = useMutation<Enable2FAResponse, Enable2FAVariables>(ENABLE_2FA);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value
     });
   };
 
-  const handleCreatePersona = async (e: React.FormEvent) => {
+  const handleCreateCliente = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await createPersona({
-        variables: formData
+      await createCliente({
+        variables: {
+          nombre: formData.nombre,
+          apellido: formData.apellido,
+          telefono: formData.telefono
+        }
       });
       setShowModal(false);
-      setFormData({
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: '',
-        fechaNacimiento: '',
-        telefono: '',
-        direccion: ''
-      });
+      setFormData({ nombre: '', apellido: '', telefono: '' });
       refetch();
     } catch (err) {
-      console.error('Error al crear persona:', err);
-      alert('Error al crear persona');
+      console.error('Error al crear cliente:', err);
+      alert('Error al crear cliente');
     }
   };
 
-  const handleDeletePersona = async (id: string) => {
-    if (confirm('¿Estás seguro de eliminar esta persona?')) {
+  const handleDeleteCliente = async (id: string) => {
+    if (confirm('¿Estás seguro de eliminar este cliente?')) {
       try {
-        await deletePersona({
+        await deleteCliente({
           variables: { id }
         });
         refetch();
@@ -176,7 +195,7 @@ export const DashboardPage = () => {
           <div className="flex justify-between h-16">
             <div className="flex items-center">
               <h1 className="text-xl font-bold text-gray-800">
-                Gestión de Personas
+                Gestión de Clientes
               </h1>
             </div>
             <div className="flex items-center space-x-4">
@@ -207,52 +226,42 @@ export const DashboardPage = () => {
       {/* Contenido principal */}
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="px-4 py-6 sm:px-0">
-          {/* Botón para crear persona */}
+          {/* Botón para crear cliente */}
           <div className="mb-4">
             <button
               onClick={() => setShowModal(true)}
               className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center"
             >
               <UserPlus size={20} className="mr-2" />
-              Nueva Persona
+              Nuevo Cliente
             </button>
           </div>
 
-          {/* Tabla de personas */}
+          {/* Tabla de clientes */}
           <div className="bg-white shadow overflow-hidden sm:rounded-lg">
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">2FA</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {data?.allPersonas?.map((persona: Persona) => (
-                  <tr key={persona.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">{persona.firstName} {persona.lastName}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{persona.email}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{persona.telefono || '-'}</td>
+                {data?.allClientes?.map((cliente: Cliente) => (
+                  <tr key={cliente.id}>
+                    <td className="px-6 py-4 whitespace-nowrap">{cliente.nombre} {cliente.apellido}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">{cliente.telefono || '-'}</td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      {persona.is2faEnabled ? (
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
-                      ) : (
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">Inactivo</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {persona.activo ? (
+                      {cliente.activo ? (
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
                       ) : (
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inactivo</span>
                       )}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button onClick={() => handleDeletePersona(persona.id)} className="text-red-600 hover:text-red-900">
+                      <button onClick={() => handleDeleteCliente(cliente.id)} className="text-red-600 hover:text-red-900">
                         <Trash2 size={18} />
                       </button>
                     </td>
@@ -264,24 +273,54 @@ export const DashboardPage = () => {
         </div>
       </main>
 
-      {/* Modal para crear persona */}
+      {/* Modal para crear cliente */}
       {showModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
           <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">Crear Nueva Persona</h3>
-            <form onSubmit={handleCreatePersona}>
+            <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">Crear Nuevo Cliente</h3>
+            <form onSubmit={handleCreateCliente}>
               <div className="space-y-3">
-                <input type="text" name="firstName" placeholder="Nombre" value={formData.firstName} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" required />
-                <input type="text" name="lastName" placeholder="Apellido" value={formData.lastName} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" required />
-                <input type="email" name="email" placeholder="Email" value={formData.email} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" required />
-                <input type="password" name="password" placeholder="Contraseña" value={formData.password} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" required />
-                <input type="date" name="fechaNacimiento" value={formData.fechaNacimiento} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" required />
-                <input type="text" name="telefono" placeholder="Teléfono" value={formData.telefono} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" />
-                <textarea name="direccion" placeholder="Dirección" value={formData.direccion} onChange={handleInputChange} className="w-full px-3 py-2 border border-gray-300 rounded-md" rows={3} />
+                <input
+                  type="text"
+                  name="nombre"
+                  placeholder="Nombre"
+                  value={formData.nombre}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                />
+                <input
+                  type="text"
+                  name="apellido"
+                  placeholder="Apellido"
+                  value={formData.apellido}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  required
+                />
+                <input
+                  type="text"
+                  name="telefono"
+                  placeholder="Teléfono"
+                  value={formData.telefono}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                />
               </div>
               <div className="mt-4 flex justify-end space-x-2">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400">Cancelar</button>
-                <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600">Crear</button>
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                >
+                  Crear
+                </button>
               </div>
             </form>
           </div>
@@ -290,41 +329,38 @@ export const DashboardPage = () => {
 
       {/* Modal para mostrar QR de 2FA */}
       {show2FAModal && qrCode && (
-         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full">
-            <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-              <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
-                Activar Google Authenticator
-              </h3>
-              <div className="text-center">
-                <p className="mb-4 text-gray-600">
-                  1. Instala Google Authenticator en tu teléfono o usa la extensión "Authenticator" en Chrome
-                </p>
-                <p className="mb-4 text-gray-600">
-                  2. Escanea este código QR:
-                </p>
-                <div className="flex justify-center mb-4">
-                  <QRCodeSVG value={qrCode} size={200} />  {/* 👈 USAR QRCodeSVG */}
-                </div>
-                <p className="mb-4 text-gray-600 text-sm">
-                  O ingresa manualmente este código en la app:
-                </p>
-                <div className="bg-gray-100 p-3 rounded mb-4">
-                  <code className="text-sm break-all font-mono">
-                    {qrCode.split('secret=')[1]?.split('&')[0]}
-                  </code>
-                </div>
-                <p className="mb-4 text-green-600 font-semibold">
-                  ✅ Una vez escaneado, la app te generará un código de 6 dígitos que cambia cada 30 segundos
-                </p>
-                <button
-                  onClick={() => setShow2FAModal(false)}
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  Cerrar
-                </button>
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
+              Activar Google Authenticator
+            </h3>
+            <div className="text-center">
+              <p className="mb-4 text-gray-600">
+                1. Instala Google Authenticator en tu teléfono
+              </p>
+              <p className="mb-4 text-gray-600">
+                2. Escanea este código QR:
+              </p>
+              <div className="flex justify-center mb-4">
+                <QRCodeSVG value={qrCode} size={200} />
               </div>
+              <p className="mb-4 text-gray-600 text-sm">
+                O ingresa manualmente este código:
+              </p>
+              <div className="bg-gray-100 p-3 rounded mb-4">
+                <code className="text-sm break-all font-mono">
+                  {qrCode.split('secret=')[1]?.split('&')[0]}
+                </code>
+              </div>
+              <button
+                onClick={() => setShow2FAModal(false)}
+                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+              >
+                Cerrar
+              </button>
             </div>
           </div>
+        </div>
       )}
     </div>
   );

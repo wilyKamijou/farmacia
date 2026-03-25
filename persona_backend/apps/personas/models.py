@@ -3,21 +3,38 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 import pyotp
 
-class Persona(AbstractUser):  # Hereda de AbstractUser para tener autenticación
-    # Campos adicionales
+class Cliente(models.Model):  # ❌ Quitar AbstractUser
+    """Cliente - NO inicia sesión"""
+    nombre = models.CharField(max_length=100)
+    apellido = models.CharField(max_length=100)
     telefono = models.CharField(max_length=20, blank=True, null=True)
-    fecha_nacimiento = models.DateField(null=True, blank=True)
-    direccion = models.TextField(blank=True)
+    
+    def __str__(self):
+        return f"{self.nombre} {self.apellido}"
+    
+    class Meta:
+        verbose_name_plural = "Clientes"
+        ordering = ['apellido', 'nombre']
+
+from django.contrib.auth.models import AbstractUser
+
+class Empleado(AbstractUser):  # ✅ Hereda de AbstractUser
+    """Empleado - Puede iniciar sesión"""
+    # Campos adicionales
+    telefono_em = models.CharField(max_length=20, blank=True, null=True)
+    direccion_em = models.TextField(blank=True, null=True)
+    sueldo_em = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    fecha_contratacion = models.DateTimeField(auto_now_add=True)
     activo = models.BooleanField(default=True)
     
-    # Campos para 2FA
+    # Campos 2FA
     otp_secret = models.CharField(max_length=32, blank=True, null=True)
     is_2fa_enabled = models.BooleanField(default=False)
     
     # Usar email como campo de login
     email = models.EmailField(unique=True)
     USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ['username']  # username es requerido por AbstractUser
+    REQUIRED_FIELDS = ['username']
     
     def __str__(self):
         return f"{self.first_name} {self.last_name}"
@@ -28,12 +45,13 @@ class Persona(AbstractUser):  # Hereda de AbstractUser para tener autenticación
         return self.otp_secret
     
     def get_otp_provisioning_uri(self):
+        """Genera URL para código QR"""
         if not self.otp_secret:
             self.generate_otp_secret()
         return pyotp.totp.TOTP(self.otp_secret).provisioning_uri(
             name=self.email,
-            issuer_name="Persona App"
-        )
+            issuer_name="Farmacia App"  # Cambié a "Farmacia App"
+    )
     
     def verify_otp(self, otp_code):
         if not self.otp_secret:
@@ -42,33 +60,13 @@ class Persona(AbstractUser):  # Hereda de AbstractUser para tener autenticación
         return totp.verify(otp_code)
     
     class Meta:
-        verbose_name_plural = "Personas"
-        ordering = ['last_name', 'first_name']
-
-
-class Empleado(models.Model):
-    """Modelo para gestionar empleados"""
-    nombre_em = models.CharField(max_length=100)
-    apellido_em = models.CharField(max_length=100)
-    direccion_em = models.TextField(blank=True, null=True)
-    sueldo_em = models.DecimalField(max_digits=10, decimal_places=2)
-    telefono_em = models.CharField(max_length=20, blank=True, null=True)
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
-    activo = models.BooleanField(default=True)
-    
-    def __str__(self):
-        return f"{self.nombre_em} {self.apellido_em}"
-    
-    class Meta:
         verbose_name_plural = "Empleados"
-        ordering = ['apellido_em', 'nombre_em']
-
-
+        ordering = ['last_name', 'first_name']
 class Venta(models.Model):
     """Modelo para gestionar ventas"""
     fecha_ve = models.DateTimeField(auto_now_add=True)
     monto_total_ve = models.DecimalField(max_digits=12, decimal_places=2)
-    persona = models.ForeignKey(Persona, on_delete=models.CASCADE, related_name='ventas')
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, related_name='ventas')
     empleado = models.ForeignKey(Empleado, on_delete=models.CASCADE, related_name='ventas')
     descripcion = models.TextField(blank=True, null=True)
     

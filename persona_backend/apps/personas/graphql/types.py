@@ -1,11 +1,11 @@
 # apps/personas/graphql/types.py
 import graphene
 from graphene_django import DjangoObjectType
-from apps.personas.models import Persona, Empleado, Venta, Categoria, Producto, Almacen, ProductoAlmacen, DetalleVenta
+from apps.personas.models import Cliente, Empleado, Venta, Categoria, Producto, Almacen, ProductoAlmacen, DetalleVenta
 
-class PersonaType(DjangoObjectType):
+class ClienteType(DjangoObjectType):
     class Meta:
-        model = Persona
+        model = Cliente
         fields = "__all__"
 
 

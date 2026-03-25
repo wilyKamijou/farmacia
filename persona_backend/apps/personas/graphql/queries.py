@@ -1,24 +1,25 @@
 # apps/personas/graphql/queries.py
 import graphene
-from .types import PersonaType, EmpleadoType, VentaType, CategoriaType, ProductoType, AlmacenType, ProductoAlmacenType, DetalleVentaType
-from apps.personas.models import Persona, Empleado, Venta, Categoria, Producto, Almacen, ProductoAlmacen, DetalleVenta
+from graphql import GraphQLError
+from .types import ClienteType, EmpleadoType, VentaType, CategoriaType, ProductoType, AlmacenType, ProductoAlmacenType, DetalleVentaType
+from apps.personas.models import Cliente, Empleado, Venta, Categoria, Producto, Almacen, ProductoAlmacen, DetalleVenta
 
 class Query(graphene.ObjectType):
-    # ==================== QUERIES PERSONA ====================
-    all_personas = graphene.List(PersonaType)
-    persona = graphene.Field(PersonaType, id=graphene.ID(required=True))
-    personas_activas = graphene.List(PersonaType)
-    me = graphene.Field(PersonaType)
+    # ==================== QUERIES CLIENTE ====================
+    all_clientes = graphene.List(ClienteType)
+    cliente = graphene.Field(ClienteType, id=graphene.ID(required=True))
+    clientes_activos = graphene.List(ClienteType)
     
     # ==================== QUERIES EMPLEADO ====================
     all_empleados = graphene.List(EmpleadoType)
     empleado = graphene.Field(EmpleadoType, id=graphene.ID(required=True))
     empleados_activos = graphene.List(EmpleadoType)
+    me = graphene.Field(EmpleadoType)  # ✅ Cambiado a EmpleadoType
     
     # ==================== QUERIES VENTA ====================
     all_ventas = graphene.List(VentaType)
     venta = graphene.Field(VentaType, id=graphene.ID(required=True))
-    ventas_por_persona = graphene.List(VentaType, persona_id=graphene.ID(required=True))
+    ventas_por_cliente = graphene.List(VentaType, cliente_id=graphene.ID(required=True))  # ✅ Cambiado de persona a cliente
     ventas_por_empleado = graphene.List(VentaType, empleado_id=graphene.ID(required=True))
     
     # ==================== QUERIES CATEGORIA ====================
@@ -45,24 +46,18 @@ class Query(graphene.ObjectType):
     detalle_venta = graphene.Field(DetalleVentaType, id=graphene.ID(required=True))
     detalles_por_venta = graphene.List(DetalleVentaType, venta_id=graphene.ID(required=True))
     
-    # ==================== RESOLVERS PERSONA ====================
-    def resolve_all_personas(self, info, **kwargs):
-        return Persona.objects.all()
+    # ==================== RESOLVERS CLIENTE ====================
+    def resolve_all_clientes(self, info, **kwargs):
+        return Cliente.objects.all()
     
-    def resolve_persona(self, info, id):
+    def resolve_cliente(self, info, id):
         try:
-            return Persona.objects.get(pk=id)
-        except Persona.DoesNotExist:
+            return Cliente.objects.get(pk=id)
+        except Cliente.DoesNotExist:
             return None
     
-    def resolve_personas_activas(self, info, **kwargs):
-        return Persona.objects.filter(activo=True)
-    
-    def resolve_me(self, info):
-        user = info.context.user
-        if user.is_authenticated:
-            return user
-        return None
+    def resolve_clientes_activos(self, info, **kwargs):
+        return Cliente.objects.filter(activo=True)
     
     # ==================== RESOLVERS EMPLEADO ====================
     def resolve_all_empleados(self, info, **kwargs):
@@ -77,6 +72,12 @@ class Query(graphene.ObjectType):
     def resolve_empleados_activos(self, info, **kwargs):
         return Empleado.objects.filter(activo=True)
     
+    def resolve_me(self, info):
+        user = info.context.user
+        if user.is_authenticated and hasattr(user, 'is_2fa_enabled'):
+            return user
+        return None
+    
     # ==================== RESOLVERS VENTA ====================
     def resolve_all_ventas(self, info, **kwargs):
         return Venta.objects.all()
@@ -87,9 +88,9 @@ class Query(graphene.ObjectType):
         except Venta.DoesNotExist:
             return None
     
-    def resolve_ventas_por_persona(self, info, persona_id):
+    def resolve_ventas_por_cliente(self, info, cliente_id):
         try:
-            return Venta.objects.filter(persona_id=persona_id)
+            return Venta.objects.filter(cliente_id=cliente_id)
         except Exception:
             return []
     

@@ -2,12 +2,14 @@
 import graphene
 import pyotp
 from django.contrib.auth import authenticate
-from .types import PersonaType, EmpleadoType, VentaType, CategoriaType, ProductoType, AlmacenType, ProductoAlmacenType, DetalleVentaType
-from apps.personas.models import Persona, Empleado, Venta, Categoria, Producto, Almacen, ProductoAlmacen, DetalleVenta
-from django.contrib.auth import login as django_login 
+from django.contrib.auth import login as django_login
 from django.contrib.auth import logout as django_logout
+from .types import ClienteType, EmpleadoType, VentaType, CategoriaType, ProductoType, AlmacenType, ProductoAlmacenType, DetalleVentaType
+from apps.personas.models import Cliente, Empleado, Venta, Categoria, Producto, Almacen, ProductoAlmacen, DetalleVenta
 
-# Mutación de Login
+
+# ==================== MUTACIONES DE AUTENTICACIÓN ====================
+
 class LoginMutation(graphene.Mutation):
     class Arguments:
         email = graphene.String(required=True)
@@ -29,9 +31,8 @@ class LoginMutation(graphene.Mutation):
                 requires_2fa=False
             )
         
-        django_login(info.context, user)
-        
-        if user.is_2fa_enabled:
+        if hasattr(user, 'is_2fa_enabled') and user.is_2fa_enabled:
+            django_login(info.context, user)
             return LoginMutation(
                 success=False,
                 message="Se requiere código 2FA",
@@ -40,6 +41,7 @@ class LoginMutation(graphene.Mutation):
                 email=user.email
             )
         
+        django_login(info.context, user)
         return LoginMutation(
             success=True,
             message="Login exitoso",
@@ -48,7 +50,7 @@ class LoginMutation(graphene.Mutation):
             email=user.email
         )
 
-# Mutación para verificar OTP
+
 class VerifyOTPMutation(graphene.Mutation):
     class Arguments:
         user_id = graphene.ID(required=True)
@@ -60,7 +62,7 @@ class VerifyOTPMutation(graphene.Mutation):
     
     def mutate(self, info, user_id, otp_code):
         try:
-            user = Persona.objects.get(id=user_id)
+            user = Empleado.objects.get(id=user_id)
             
             if user.verify_otp(otp_code):
                 return VerifyOTPMutation(
@@ -73,13 +75,13 @@ class VerifyOTPMutation(graphene.Mutation):
                     success=False,
                     message="Código OTP inválido"
                 )
-        except Persona.DoesNotExist:
+        except Empleado.DoesNotExist:
             return VerifyOTPMutation(
                 success=False,
                 message="Usuario no encontrado"
             )
 
-# Mutación para habilitar 2FA
+
 class Enable2FAMutation(graphene.Mutation):
     class Arguments:
         password = graphene.String(required=True)
@@ -104,7 +106,6 @@ class Enable2FAMutation(graphene.Mutation):
                 message="Contraseña incorrecta"
             )
         
-        # Generar secreto OTP
         secret = user.generate_otp_secret()
         uri = user.get_otp_provisioning_uri()
         
@@ -118,7 +119,7 @@ class Enable2FAMutation(graphene.Mutation):
             secret=secret
         )
 
-#  MUTACIÓN DE LOGOUT - DEFINIR ANTES DE LA CLASE MUTATION
+
 class LogoutMutation(graphene.Mutation):
     success = graphene.Boolean()
     message = graphene.String()
@@ -127,61 +128,72 @@ class LogoutMutation(graphene.Mutation):
         django_logout(info.context)
         return LogoutMutation(success=True, message="Sesión cerrada")
 
-# Mutaciones CRUD de Persona
-class CrearPersona(graphene.Mutation):
-    class Arguments:
-        first_name = graphene.String(required=True)
-        last_name = graphene.String(required=True)
-        email = graphene.String(required=True)
-        password = graphene.String(required=True)
-        fecha_nacimiento = graphene.Date(required=True)
-        telefono = graphene.String()
-        direccion = graphene.String()
-        activo = graphene.Boolean()
-    
-    persona = graphene.Field(PersonaType)
-    
-    def mutate(self, info, first_name, last_name, email, password, fecha_nacimiento, 
-               telefono=None, direccion="", activo=True):
-        persona = Persona(
-            first_name=first_name,
-            last_name=last_name,
-            username=email,
-            email=email,
-            telefono=telefono,
-            fecha_nacimiento=fecha_nacimiento,
-            direccion=direccion,
-            activo=activo
-        )
-        persona.set_password(password)
-        persona.save()
-        return CrearPersona(persona=persona)
 
-class ActualizarPersona(graphene.Mutation):
+# ==================== MUTACIONES CRUD CLIENTE ====================
+
+class CrearCliente(graphene.Mutation):
+    class Arguments:
+        nombre = graphene.String(required=True)
+        apellido = graphene.String(required=True)
+        telefono = graphene.String()
+    
+    cliente = graphene.Field(ClienteType)
+    ok = graphene.Boolean()
+    mensaje = graphene.String()
+    
+    def mutate(self, info, nombre, apellido, telefono=None):
+        try:
+            cliente = Cliente(
+                nombre=nombre,
+                apellido=apellido,
+                telefono=telefono
+            )
+            cliente.save()
+            return CrearCliente(
+                cliente=cliente,
+                ok=True,
+                mensaje=f"Cliente {nombre} {apellido} creado correctamente"
+            )
+        except Exception as e:
+            return CrearCliente(
+                cliente=None,
+                ok=False,
+                mensaje=f"Error al crear cliente: {str(e)}"
+            )
+
+
+class ActualizarCliente(graphene.Mutation):
     class Arguments:
         id = graphene.ID(required=True)
-        first_name = graphene.String()
-        last_name = graphene.String()
-        email = graphene.String()
+        nombre = graphene.String()
+        apellido = graphene.String()
         telefono = graphene.String()
-        fecha_nacimiento = graphene.Date()
-        direccion = graphene.String()
-        activo = graphene.Boolean()
     
-    persona = graphene.Field(PersonaType)
+    cliente = graphene.Field(ClienteType)
+    ok = graphene.Boolean()
+    mensaje = graphene.String()
     
     def mutate(self, info, id, **kwargs):
         try:
-            persona = Persona.objects.get(pk=id)
+            cliente = Cliente.objects.get(pk=id)
             for key, value in kwargs.items():
-                if value is not None and key != 'password':
-                    setattr(persona, key, value)
-            persona.save()
-            return ActualizarPersona(persona=persona)
-        except Persona.DoesNotExist:
-            return ActualizarPersona(persona=None)
+                if value is not None:
+                    setattr(cliente, key, value)
+            cliente.save()
+            return ActualizarCliente(
+                cliente=cliente,
+                ok=True,
+                mensaje="Cliente actualizado correctamente"
+            )
+        except Cliente.DoesNotExist:
+            return ActualizarCliente(
+                cliente=None,
+                ok=False,
+                mensaje="Cliente no encontrado"
+            )
 
-class EliminarPersona(graphene.Mutation):
+
+class EliminarCliente(graphene.Mutation):
     class Arguments:
         id = graphene.ID(required=True)
     
@@ -190,55 +202,76 @@ class EliminarPersona(graphene.Mutation):
     
     def mutate(self, info, id):
         try:
-            persona = Persona.objects.get(pk=id)
-            nombre_completo = str(persona)
-            persona.delete()
-            return EliminarPersona(ok=True, mensaje=f"Persona {nombre_completo} eliminada correctamente")
-        except Persona.DoesNotExist:
-            return EliminarPersona(ok=False, mensaje="Persona no encontrada")
+            cliente = Cliente.objects.get(pk=id)
+            nombre_completo = f"{cliente.nombre} {cliente.apellido}"
+            cliente.delete()
+            return EliminarCliente(
+                ok=True,
+                mensaje=f"Cliente {nombre_completo} eliminado correctamente"
+            )
+        except Cliente.DoesNotExist:
+            return EliminarCliente(
+                ok=False,
+                mensaje="Cliente no encontrado"
+            )
 
 
 # ==================== MUTACIONES CRUD EMPLEADO ====================
 
 class CrearEmpleado(graphene.Mutation):
     class Arguments:
-        nombre_em = graphene.String(required=True)
-        apellido_em = graphene.String(required=True)
-        direccion_em = graphene.String()
-        sueldo_em = graphene.Decimal(required=True)
+        username = graphene.String(required=True)
+        email = graphene.String(required=True)
+        password = graphene.String(required=True)
+        first_name = graphene.String()
+        last_name = graphene.String()
         telefono_em = graphene.String()
+        direccion_em = graphene.String()
+        sueldo_em = graphene.Decimal()
         activo = graphene.Boolean()
     
     empleado = graphene.Field(EmpleadoType)
     ok = graphene.Boolean()
     mensaje = graphene.String()
     
-    def mutate(self, info, nombre_em, apellido_em, sueldo_em, 
-               direccion_em=None, telefono_em=None, activo=True):
+    def mutate(self, info, username, email, password, first_name="", last_name="",
+               telefono_em=None, direccion_em=None, sueldo_em=None, activo=True):
         try:
             empleado = Empleado(
-                nombre_em=nombre_em,
-                apellido_em=apellido_em,
+                username=username,
+                email=email,
+                first_name=first_name,
+                last_name=last_name,
+                telefono_em=telefono_em,
                 direccion_em=direccion_em,
                 sueldo_em=sueldo_em,
-                telefono_em=telefono_em,
                 activo=activo
             )
+            empleado.set_password(password)
             empleado.save()
-            return CrearEmpleado(empleado=empleado, ok=True, 
-                               mensaje=f"Empleado {nombre_em} {apellido_em} creado correctamente")
+            return CrearEmpleado(
+                empleado=empleado,
+                ok=True,
+                mensaje=f"Empleado {first_name} {last_name} creado correctamente"
+            )
         except Exception as e:
-            return CrearEmpleado(empleado=None, ok=False, mensaje=f"Error al crear empleado: {str(e)}")
+            return CrearEmpleado(
+                empleado=None,
+                ok=False,
+                mensaje=f"Error al crear empleado: {str(e)}"
+            )
 
 
 class ActualizarEmpleado(graphene.Mutation):
     class Arguments:
         id = graphene.ID(required=True)
-        nombre_em = graphene.String()
-        apellido_em = graphene.String()
+        username = graphene.String()
+        email = graphene.String()
+        first_name = graphene.String()
+        last_name = graphene.String()
+        telefono_em = graphene.String()
         direccion_em = graphene.String()
         sueldo_em = graphene.Decimal()
-        telefono_em = graphene.String()
         activo = graphene.Boolean()
     
     empleado = graphene.Field(EmpleadoType)
@@ -249,13 +282,20 @@ class ActualizarEmpleado(graphene.Mutation):
         try:
             empleado = Empleado.objects.get(pk=id)
             for key, value in kwargs.items():
-                if value is not None:
+                if value is not None and key != 'password':
                     setattr(empleado, key, value)
             empleado.save()
-            return ActualizarEmpleado(empleado=empleado, ok=True, 
-                                     mensaje="Empleado actualizado correctamente")
+            return ActualizarEmpleado(
+                empleado=empleado,
+                ok=True,
+                mensaje="Empleado actualizado correctamente"
+            )
         except Empleado.DoesNotExist:
-            return ActualizarEmpleado(empleado=None, ok=False, mensaje="Empleado no encontrado")
+            return ActualizarEmpleado(
+                empleado=None,
+                ok=False,
+                mensaje="Empleado no encontrado"
+            )
 
 
 class EliminarEmpleado(graphene.Mutation):
@@ -268,18 +308,24 @@ class EliminarEmpleado(graphene.Mutation):
     def mutate(self, info, id):
         try:
             empleado = Empleado.objects.get(pk=id)
-            nombre_completo = f"{empleado.nombre_em} {empleado.apellido_em}"
+            nombre_completo = f"{empleado.first_name} {empleado.last_name}"
             empleado.delete()
-            return EliminarEmpleado(ok=True, mensaje=f"Empleado {nombre_completo} eliminado correctamente")
+            return EliminarEmpleado(
+                ok=True,
+                mensaje=f"Empleado {nombre_completo} eliminado correctamente"
+            )
         except Empleado.DoesNotExist:
-            return EliminarEmpleado(ok=False, mensaje="Empleado no encontrado")
+            return EliminarEmpleado(
+                ok=False,
+                mensaje="Empleado no encontrado"
+            )
 
 
 # ==================== MUTACIONES CRUD VENTA ====================
 
 class CrearVenta(graphene.Mutation):
     class Arguments:
-        persona_id = graphene.ID(required=True)
+        cliente_id = graphene.ID(required=True)
         empleado_id = graphene.ID(required=True)
         monto_total_ve = graphene.Decimal(required=True)
         descripcion = graphene.String()
@@ -288,26 +334,41 @@ class CrearVenta(graphene.Mutation):
     ok = graphene.Boolean()
     mensaje = graphene.String()
     
-    def mutate(self, info, persona_id, empleado_id, monto_total_ve, descripcion=None):
+    def mutate(self, info, cliente_id, empleado_id, monto_total_ve, descripcion=None):
         try:
-            persona = Persona.objects.get(pk=persona_id)
+            cliente = Cliente.objects.get(pk=cliente_id)
             empleado = Empleado.objects.get(pk=empleado_id)
             
             venta = Venta(
-                persona=persona,
+                cliente=cliente,
                 empleado=empleado,
                 monto_total_ve=monto_total_ve,
                 descripcion=descripcion
             )
             venta.save()
-            return CrearVenta(venta=venta, ok=True, 
-                            mensaje=f"Venta #{venta.id} creada correctamente")
-        except Persona.DoesNotExist:
-            return CrearVenta(venta=None, ok=False, mensaje="Persona no encontrada")
+            return CrearVenta(
+                venta=venta,
+                ok=True,
+                mensaje=f"Venta #{venta.id} creada correctamente"
+            )
+        except Cliente.DoesNotExist:
+            return CrearVenta(
+                venta=None,
+                ok=False,
+                mensaje="Cliente no encontrado"
+            )
         except Empleado.DoesNotExist:
-            return CrearVenta(venta=None, ok=False, mensaje="Empleado no encontrado")
+            return CrearVenta(
+                venta=None,
+                ok=False,
+                mensaje="Empleado no encontrado"
+            )
         except Exception as e:
-            return CrearVenta(venta=None, ok=False, mensaje=f"Error al crear venta: {str(e)}")
+            return CrearVenta(
+                venta=None,
+                ok=False,
+                mensaje=f"Error al crear venta: {str(e)}"
+            )
 
 
 class ActualizarVenta(graphene.Mutation):
@@ -315,7 +376,7 @@ class ActualizarVenta(graphene.Mutation):
         id = graphene.ID(required=True)
         monto_total_ve = graphene.Decimal()
         descripcion = graphene.String()
-        persona_id = graphene.ID()
+        cliente_id = graphene.ID()
         empleado_id = graphene.ID()
     
     venta = graphene.Field(VentaType)
@@ -326,29 +387,42 @@ class ActualizarVenta(graphene.Mutation):
         try:
             venta = Venta.objects.get(pk=id)
             
-            # Validar y actualizar relaciones
-            if 'persona_id' in kwargs and kwargs['persona_id'] is not None:
-                persona = Persona.objects.get(pk=kwargs['persona_id'])
-                venta.persona = persona
+            if 'cliente_id' in kwargs and kwargs['cliente_id'] is not None:
+                cliente = Cliente.objects.get(pk=kwargs['cliente_id'])
+                venta.cliente = cliente
             
             if 'empleado_id' in kwargs and kwargs['empleado_id'] is not None:
                 empleado = Empleado.objects.get(pk=kwargs['empleado_id'])
                 venta.empleado = empleado
             
-            # Actualizar otros campos
             for key in ['monto_total_ve', 'descripcion']:
                 if key in kwargs and kwargs[key] is not None:
                     setattr(venta, key, kwargs[key])
             
             venta.save()
-            return ActualizarVenta(venta=venta, ok=True, 
-                                  mensaje="Venta actualizada correctamente")
+            return ActualizarVenta(
+                venta=venta,
+                ok=True,
+                mensaje="Venta actualizada correctamente"
+            )
         except Venta.DoesNotExist:
-            return ActualizarVenta(venta=None, ok=False, mensaje="Venta no encontrada")
-        except Persona.DoesNotExist:
-            return ActualizarVenta(venta=None, ok=False, mensaje="Persona no encontrada")
+            return ActualizarVenta(
+                venta=None,
+                ok=False,
+                mensaje="Venta no encontrada"
+            )
+        except Cliente.DoesNotExist:
+            return ActualizarVenta(
+                venta=None,
+                ok=False,
+                mensaje="Cliente no encontrado"
+            )
         except Empleado.DoesNotExist:
-            return ActualizarVenta(venta=None, ok=False, mensaje="Empleado no encontrado")
+            return ActualizarVenta(
+                venta=None,
+                ok=False,
+                mensaje="Empleado no encontrado"
+            )
 
 
 class EliminarVenta(graphene.Mutation):
@@ -363,9 +437,15 @@ class EliminarVenta(graphene.Mutation):
             venta = Venta.objects.get(pk=id)
             venta_id = venta.id
             venta.delete()
-            return EliminarVenta(ok=True, mensaje=f"Venta #{venta_id} eliminada correctamente")
+            return EliminarVenta(
+                ok=True,
+                mensaje=f"Venta #{venta_id} eliminada correctamente"
+            )
         except Venta.DoesNotExist:
-            return EliminarVenta(ok=False, mensaje="Venta no encontrada")
+            return EliminarVenta(
+                ok=False,
+                mensaje="Venta no encontrada"
+            )
 
 
 # ==================== MUTACIONES CRUD CATEGORIA ====================
@@ -386,11 +466,17 @@ class CrearCategoria(graphene.Mutation):
                 descripcion_ct=descripcion_ct
             )
             categoria.save()
-            return CrearCategoria(categoria=categoria, ok=True, 
-                                 mensaje=f"Categoría {nombre_ct} creada correctamente")
+            return CrearCategoria(
+                categoria=categoria,
+                ok=True,
+                mensaje=f"Categoría {nombre_ct} creada correctamente"
+            )
         except Exception as e:
-            return CrearCategoria(categoria=None, ok=False, 
-                                 mensaje=f"Error al crear categoría: {str(e)}")
+            return CrearCategoria(
+                categoria=None,
+                ok=False,
+                mensaje=f"Error al crear categoría: {str(e)}"
+            )
 
 
 class ActualizarCategoria(graphene.Mutation):
@@ -410,11 +496,17 @@ class ActualizarCategoria(graphene.Mutation):
                 if value is not None:
                     setattr(categoria, key, value)
             categoria.save()
-            return ActualizarCategoria(categoria=categoria, ok=True, 
-                                      mensaje="Categoría actualizada correctamente")
+            return ActualizarCategoria(
+                categoria=categoria,
+                ok=True,
+                mensaje="Categoría actualizada correctamente"
+            )
         except Categoria.DoesNotExist:
-            return ActualizarCategoria(categoria=None, ok=False, 
-                                      mensaje="Categoría no encontrada")
+            return ActualizarCategoria(
+                categoria=None,
+                ok=False,
+                mensaje="Categoría no encontrada"
+            )
 
 
 class EliminarCategoria(graphene.Mutation):
@@ -429,10 +521,15 @@ class EliminarCategoria(graphene.Mutation):
             categoria = Categoria.objects.get(pk=id)
             nombre = categoria.nombre_ct
             categoria.delete()
-            return EliminarCategoria(ok=True, 
-                                    mensaje=f"Categoría {nombre} eliminada correctamente")
+            return EliminarCategoria(
+                ok=True,
+                mensaje=f"Categoría {nombre} eliminada correctamente"
+            )
         except Categoria.DoesNotExist:
-            return EliminarCategoria(ok=False, mensaje="Categoría no encontrada")
+            return EliminarCategoria(
+                ok=False,
+                mensaje="Categoría no encontrada"
+            )
 
 
 # ==================== MUTACIONES CRUD PRODUCTO ====================
@@ -452,7 +549,7 @@ class CrearProducto(graphene.Mutation):
     ok = graphene.Boolean()
     mensaje = graphene.String()
     
-    def mutate(self, info, nombre_pr, nombre_tc, fecha_fab, fecha_venc, 
+    def mutate(self, info, nombre_pr, nombre_tc, fecha_fab, fecha_venc,
                categoria_id, descripcion_pr=None, concentracion_qm=None, composicion_qm=None):
         try:
             categoria = Categoria.objects.get(pk=categoria_id)
@@ -467,14 +564,23 @@ class CrearProducto(graphene.Mutation):
                 categoria=categoria
             )
             producto.save()
-            return CrearProducto(producto=producto, ok=True, 
-                                mensaje=f"Producto {nombre_pr} creado correctamente")
+            return CrearProducto(
+                producto=producto,
+                ok=True,
+                mensaje=f"Producto {nombre_pr} creado correctamente"
+            )
         except Categoria.DoesNotExist:
-            return CrearProducto(producto=None, ok=False, 
-                                mensaje="Categoría no encontrada")
+            return CrearProducto(
+                producto=None,
+                ok=False,
+                mensaje="Categoría no encontrada"
+            )
         except Exception as e:
-            return CrearProducto(producto=None, ok=False, 
-                                mensaje=f"Error al crear producto: {str(e)}")
+            return CrearProducto(
+                producto=None,
+                ok=False,
+                mensaje=f"Error al crear producto: {str(e)}"
+            )
 
 
 class ActualizarProducto(graphene.Mutation):
@@ -497,27 +603,34 @@ class ActualizarProducto(graphene.Mutation):
         try:
             producto = Producto.objects.get(pk=id)
             
-            # Validar y actualizar relación con categoría
             if 'categoria_id' in kwargs and kwargs['categoria_id'] is not None:
                 categoria = Categoria.objects.get(pk=kwargs['categoria_id'])
                 producto.categoria = categoria
             
-            # Actualizar otros campos
-            campos_permitidos = ['nombre_pr', 'nombre_tc', 'fecha_fab', 'fecha_venc', 
-                                'descripcion_pr', 'concentracion_qm', 'composicion_qm']
+            campos_permitidos = ['nombre_pr', 'nombre_tc', 'fecha_fab', 'fecha_venc',
+                                 'descripcion_pr', 'concentracion_qm', 'composicion_qm']
             for key in campos_permitidos:
                 if key in kwargs and kwargs[key] is not None:
                     setattr(producto, key, kwargs[key])
             
             producto.save()
-            return ActualizarProducto(producto=producto, ok=True, 
-                                     mensaje="Producto actualizado correctamente")
+            return ActualizarProducto(
+                producto=producto,
+                ok=True,
+                mensaje="Producto actualizado correctamente"
+            )
         except Producto.DoesNotExist:
-            return ActualizarProducto(producto=None, ok=False, 
-                                     mensaje="Producto no encontrado")
+            return ActualizarProducto(
+                producto=None,
+                ok=False,
+                mensaje="Producto no encontrado"
+            )
         except Categoria.DoesNotExist:
-            return ActualizarProducto(producto=None, ok=False, 
-                                     mensaje="Categoría no encontrada")
+            return ActualizarProducto(
+                producto=None,
+                ok=False,
+                mensaje="Categoría no encontrada"
+            )
 
 
 class EliminarProducto(graphene.Mutation):
@@ -532,10 +645,15 @@ class EliminarProducto(graphene.Mutation):
             producto = Producto.objects.get(pk=id)
             nombre = producto.nombre_pr
             producto.delete()
-            return EliminarProducto(ok=True, 
-                                   mensaje=f"Producto {nombre} eliminado correctamente")
+            return EliminarProducto(
+                ok=True,
+                mensaje=f"Producto {nombre} eliminado correctamente"
+            )
         except Producto.DoesNotExist:
-            return EliminarProducto(ok=False, mensaje="Producto no encontrado")
+            return EliminarProducto(
+                ok=False,
+                mensaje="Producto no encontrado"
+            )
 
 
 # ==================== MUTACIONES CRUD ALMACEN ====================
@@ -558,11 +676,17 @@ class CrearAlmacen(graphene.Mutation):
                 direccion_am=direccion_am
             )
             almacen.save()
-            return CrearAlmacen(almacen=almacen, ok=True, 
-                               mensaje=f"Almacén {nombre_am} creado correctamente")
+            return CrearAlmacen(
+                almacen=almacen,
+                ok=True,
+                mensaje=f"Almacén {nombre_am} creado correctamente"
+            )
         except Exception as e:
-            return CrearAlmacen(almacen=None, ok=False, 
-                               mensaje=f"Error al crear almacén: {str(e)}")
+            return CrearAlmacen(
+                almacen=None,
+                ok=False,
+                mensaje=f"Error al crear almacén: {str(e)}"
+            )
 
 
 class ActualizarAlmacen(graphene.Mutation):
@@ -583,11 +707,17 @@ class ActualizarAlmacen(graphene.Mutation):
                 if value is not None:
                     setattr(almacen, key, value)
             almacen.save()
-            return ActualizarAlmacen(almacen=almacen, ok=True, 
-                                    mensaje="Almacén actualizado correctamente")
+            return ActualizarAlmacen(
+                almacen=almacen,
+                ok=True,
+                mensaje="Almacén actualizado correctamente"
+            )
         except Almacen.DoesNotExist:
-            return ActualizarAlmacen(almacen=None, ok=False, 
-                                    mensaje="Almacén no encontrado")
+            return ActualizarAlmacen(
+                almacen=None,
+                ok=False,
+                mensaje="Almacén no encontrado"
+            )
 
 
 class EliminarAlmacen(graphene.Mutation):
@@ -602,10 +732,15 @@ class EliminarAlmacen(graphene.Mutation):
             almacen = Almacen.objects.get(pk=id)
             nombre = almacen.nombre_am
             almacen.delete()
-            return EliminarAlmacen(ok=True, 
-                                  mensaje=f"Almacén {nombre} eliminado correctamente")
+            return EliminarAlmacen(
+                ok=True,
+                mensaje=f"Almacén {nombre} eliminado correctamente"
+            )
         except Almacen.DoesNotExist:
-            return EliminarAlmacen(ok=False, mensaje="Almacén no encontrado")
+            return EliminarAlmacen(
+                ok=False,
+                mensaje="Almacén no encontrado"
+            )
 
 
 # ==================== MUTACIONES CRUD PRODUCTO ALMACEN ====================
@@ -625,7 +760,6 @@ class CrearProductoAlmacen(graphene.Mutation):
             producto = Producto.objects.get(pk=producto_id)
             almacen = Almacen.objects.get(pk=almacen_id)
             
-            # Verificar si ya existe
             producto_almacen, created = ProductoAlmacen.objects.get_or_create(
                 producto=producto,
                 almacen=almacen,
@@ -634,32 +768,32 @@ class CrearProductoAlmacen(graphene.Mutation):
             
             if not created:
                 return CrearProductoAlmacen(
-                    producto_almacen=None, 
-                    ok=False, 
+                    producto_almacen=None,
+                    ok=False,
                     mensaje="Este producto ya existe en este almacén"
                 )
             
             return CrearProductoAlmacen(
-                producto_almacen=producto_almacen, 
-                ok=True, 
+                producto_almacen=producto_almacen,
+                ok=True,
                 mensaje=f"Producto {producto.nombre_pr} agregado al almacén con stock {stock}"
             )
         except Producto.DoesNotExist:
             return CrearProductoAlmacen(
-                producto_almacen=None, 
-                ok=False, 
+                producto_almacen=None,
+                ok=False,
                 mensaje="Producto no encontrado"
             )
         except Almacen.DoesNotExist:
             return CrearProductoAlmacen(
-                producto_almacen=None, 
-                ok=False, 
+                producto_almacen=None,
+                ok=False,
                 mensaje="Almacén no encontrado"
             )
         except Exception as e:
             return CrearProductoAlmacen(
-                producto_almacen=None, 
-                ok=False, 
+                producto_almacen=None,
+                ok=False,
                 mensaje=f"Error al crear: {str(e)}"
             )
 
@@ -682,14 +816,14 @@ class ActualizarProductoAlmacen(graphene.Mutation):
             
             producto_almacen.save()
             return ActualizarProductoAlmacen(
-                producto_almacen=producto_almacen, 
-                ok=True, 
+                producto_almacen=producto_almacen,
+                ok=True,
                 mensaje="Stock actualizado correctamente"
             )
         except ProductoAlmacen.DoesNotExist:
             return ActualizarProductoAlmacen(
-                producto_almacen=None, 
-                ok=False, 
+                producto_almacen=None,
+                ok=False,
                 mensaje="Registro no encontrado"
             )
 
@@ -706,12 +840,12 @@ class EliminarProductoAlmacen(graphene.Mutation):
             producto_almacen = ProductoAlmacen.objects.get(pk=id)
             producto_almacen.delete()
             return EliminarProductoAlmacen(
-                ok=True, 
+                ok=True,
                 mensaje="Registro de producto-almacén eliminado correctamente"
             )
         except ProductoAlmacen.DoesNotExist:
             return EliminarProductoAlmacen(
-                ok=False, 
+                ok=False,
                 mensaje="Registro no encontrado"
             )
 
@@ -736,7 +870,6 @@ class CrearDetalleVenta(graphene.Mutation):
             producto = Producto.objects.get(pk=producto_id)
             almacen = Almacen.objects.get(pk=almacen_id)
             
-            # Verificar si ya existe
             detalle_venta, created = DetalleVenta.objects.get_or_create(
                 venta=venta,
                 producto=producto,
@@ -840,18 +973,19 @@ class EliminarDetalleVenta(graphene.Mutation):
             )
 
 
-# Mutation principal - exportar todas las mutaciones
+# ==================== MUTATION PRINCIPAL ====================
+
 class Mutation(graphene.ObjectType):
     # Autenticación
     login = LoginMutation.Field()
     verify_otp = VerifyOTPMutation.Field()
     enable_2fa = Enable2FAMutation.Field()
-    logout = LogoutMutation.Field()  # 👈 AGREGAR LOGOUT
+    logout = LogoutMutation.Field()
     
-    # CRUD Persona
-    crear_persona = CrearPersona.Field()
-    actualizar_persona = ActualizarPersona.Field()
-    eliminar_persona = EliminarPersona.Field()
+    # CRUD Cliente
+    crear_cliente = CrearCliente.Field()
+    actualizar_cliente = ActualizarCliente.Field()
+    eliminar_cliente = EliminarCliente.Field()
     
     # CRUD Empleado
     crear_empleado = CrearEmpleado.Field()
