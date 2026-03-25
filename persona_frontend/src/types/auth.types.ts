@@ -159,18 +159,18 @@ export interface Cliente {
   nombre: string;
   apellido: string;
   telefono?: string;
-  activo: boolean;
+  activo?: boolean;  // ← Opcional si no siempre viene
 }
 
 export interface GetAllClientesResponse {
-  all_clientes: Cliente[];  // ← Cambiado de allClientes a all_clientes
+  allClientes: Cliente[];
 }
 
 export interface CreateClienteResponse {
-  crear_cliente: {  // ← Cambiado de crearCliente a crear_cliente
-    cliente: Cliente;
+  crearCliente: {
     ok: boolean;
     mensaje: string;
+    // cliente?: Cliente;  // ← Solo si tu backend lo devuelve
   };
 }
 
@@ -181,10 +181,10 @@ export interface CreateClienteVariables {
 }
 
 export interface UpdateClienteResponse {
-  actualizar_cliente: {  // ← Cambiado de actualizarCliente a actualizar_cliente
-    cliente: Cliente;
+  actualizarCliente: {
     ok: boolean;
     mensaje: string;
+    // cliente?: Cliente;  // ← Solo si tu backend lo devuelve
   };
 }
 
@@ -196,7 +196,7 @@ export interface UpdateClienteVariables {
 }
 
 export interface DeleteClienteResponse {
-  eliminar_cliente: {
+  eliminarCliente: {
     ok: boolean;
     mensaje: string;
   };
@@ -390,5 +390,226 @@ export interface DeleteProductoResponse {
 }
 
 export interface DeleteProductoVariables {
+  id: string;
+}
+
+// ==================== TIPOS PARA ALMACEN ====================
+export interface Almacen {
+  id: string;
+  nombreAm: string;        // ✅ CamelCase
+  descripcionAm?: string;  // ✅ CamelCase
+  direccionAm: string;     // ✅ CamelCase
+}
+
+export interface GetAllAlmacenesResponse {
+  allAlmacenes: Almacen[];
+}
+
+export interface CreateAlmacenResponse {
+  crearAlmacen: {
+    almacen: Almacen;
+    ok: boolean;
+    mensaje: string;
+  };
+}
+
+export interface CreateAlmacenVariables {
+  nombreAm: string;        // ✅ CamelCase
+  descripcionAm?: string;  // ✅ CamelCase
+  direccionAm: string;     // ✅ CamelCase
+}
+
+export interface UpdateAlmacenResponse {
+  actualizarAlmacen: {
+    almacen: Almacen;
+    ok: boolean;
+    mensaje: string;
+  };
+}
+
+export interface UpdateAlmacenVariables {
+  id: string;
+  nombreAm?: string;        //  CamelCase
+  descripcionAm?: string;   //  CamelCase
+  direccionAm?: string;     //  CamelCase
+}
+
+export interface DeleteAlmacenResponse {
+  eliminarAlmacen: {
+    ok: boolean;
+    mensaje: string;
+  };
+}
+
+export interface DeleteAlmacenVariables {
+  id: string;
+}
+
+// ==================== TIPOS PARA VENTA ====================
+// ==================== TIPOS PARA VENTA ====================
+export interface Venta {
+  id: string;
+  fechaVe: string;
+  montoTotalVe: number;   // En TypeScript sigue siendo number, aunque en GraphQL sea Decimal
+  cliente: Cliente;
+  empleado: Empleado;
+  descripcion?: string;
+}
+
+export interface CreateVentaVariables {
+  clienteId: string;
+  empleadoId: string;
+  montoTotalVe: number;   // En TypeScript enviamos number, se convierte automáticamente a Decimal
+  descripcion?: string;
+}
+
+export interface UpdateVentaVariables {
+  id: string;
+  montoTotalVe?: number;
+  descripcion?: string;
+}
+
+// ✅ Las respuestas pueden tener campos opcionales
+export interface CreateVentaResponse {
+  crearVenta: {
+    venta?: Venta;
+    ok: boolean;
+    mensaje: string;
+  };
+}
+
+export interface UpdateVentaResponse {
+  actualizarVenta: {
+    venta?: Venta;
+    ok: boolean;
+    mensaje: string;
+  };
+}
+
+export interface DeleteVentaResponse {
+  eliminarVenta: {
+    ok: boolean;
+    mensaje: string;
+  };
+}
+
+export interface DeleteVentaVariables {
+  id: string;
+}
+
+export interface GetAllVentasResponse {
+  allVentas: Venta[];
+}
+
+export interface GetAllClientesResponse {
+  allClientes: Cliente[];
+}
+
+export interface GetAllEmpleadosResponse {
+  allEmpleados: Empleado[];
+}
+
+// ==================== TIPOS PARA PRODUCTO ALMACEN ====================
+export interface ProductoAlmacen {
+  id: string;
+  producto: Producto;
+  almacen: Almacen;
+  stock: number;
+}
+
+export interface GetAllProductosAlmacenResponse {
+  allProductosAlmacen: ProductoAlmacen[];
+}
+
+export interface CreateProductoAlmacenResponse {
+  crearProductoAlmacen: {
+    productoAlmacen: ProductoAlmacen;
+    ok: boolean;
+    mensaje: string;
+  };
+}
+
+export interface CreateProductoAlmacenVariables {
+  productoId: string;
+  almacenId: string;
+  stock: number;
+}
+
+export interface UpdateProductoAlmacenResponse {
+  actualizarProductoAlmacen: {
+    productoAlmacen: ProductoAlmacen;
+    ok: boolean;
+    mensaje: string;
+  };
+}
+
+export interface UpdateProductoAlmacenVariables {
+  id: string;
+  stock?: number;
+}
+
+export interface DeleteProductoAlmacenResponse {
+  eliminarProductoAlmacen: {
+    ok: boolean;
+    mensaje: string;
+  };
+}
+
+export interface DeleteProductoAlmacenVariables {
+  id: string;
+}
+
+// ==================== TIPOS PARA DETALLE VENTA ====================
+export interface DetalleVenta {
+  id: string;
+  venta: Venta;
+  producto: Producto;
+  almacen: Almacen;
+  cantidadDv: number;
+  precioDv: number;
+}
+
+export interface GetAllDetallesVentaResponse {
+  allDetallesVenta: DetalleVenta[];
+}
+
+export interface CreateDetalleVentaResponse {
+  crearDetalleVenta: {
+    detalleVenta: DetalleVenta;
+    ok: boolean;
+    mensaje: string;
+  };
+}
+
+export interface CreateDetalleVentaVariables {
+  ventaId: string;      // ← camelCase
+  productoId: string;   // ← camelCase
+  almacenId: string;    // ← camelCase
+  cantidadDv: number;   // ← camelCase
+  precioDv: number;     // ← camelCase
+}
+
+export interface UpdateDetalleVentaResponse {
+  actualizarDetalleVenta: {
+    detalleVenta: DetalleVenta;
+    ok: boolean;
+    mensaje: string;
+  };
+}
+
+export interface UpdateDetalleVentaVariables {
+  id: string;
+  cantidadDv?: number;  // ← camelCase
+  precioDv?: number;    // ← camelCase
+}
+
+export interface DeleteDetalleVentaResponse {
+  eliminarDetalleVenta: {
+    ok: boolean;
+    mensaje: string;
+  };
+}
+
+export interface DeleteDetalleVentaVariables {
   id: string;
 }

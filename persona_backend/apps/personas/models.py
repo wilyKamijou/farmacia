@@ -62,6 +62,7 @@ class Empleado(AbstractUser):
     class Meta:
         verbose_name_plural = "Empleados"
         ordering = ['last_name', 'first_name']
+        
 class Venta(models.Model):
     """Modelo para gestionar ventas"""
     fecha_ve = models.DateTimeField(auto_now_add=True)

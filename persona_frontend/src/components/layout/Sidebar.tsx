@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Users, UserCheck, Tag, Package, LogOut, Shield } from 'lucide-react';
+import { Users, UserCheck, Tag, Package, LogOut, Shield, Warehouse, ShoppingCart, Boxes, ClipboardList } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client';
@@ -54,15 +54,15 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="w-64 bg-gradient-to-b from-blue-900 to-blue-800 text-white h-screen fixed left-0 top-0 shadow-lg">
+      <aside className="w-64 bg-gradient-to-b from-blue-900 to-blue-800 text-white h-screen fixed left-0 top-0 shadow-lg flex flex-col">
         {/* Header */}
         <div className="p-6 border-b border-blue-700">
           <h1 className="text-2xl font-bold">Farmacia</h1>
           <p className="text-blue-200 text-sm mt-1">Panel de Control</p>
         </div>
 
-        {/* Navigation Menu */}
-        <nav className="p-4 space-y-2">
+        {/* Navigation Menu - Scrollable */}
+        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
           <h2 className="px-4 py-2 text-xs font-semibold text-blue-300 uppercase tracking-wider">
             Gestión
           </h2>
@@ -122,20 +122,79 @@ export function Sidebar() {
             <Package size={20} />
             <span>Productos</span>
           </Link>
+
+          {/* Almacenes */}
+          <Link
+            to="/dashboard/almacenes"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              isActive('/dashboard/almacenes')
+                ? 'bg-blue-700 text-white'
+                : 'text-blue-100 hover:bg-blue-700/50'
+            }`}
+          >
+            <Warehouse size={20} />
+            <span>Almacenes</span>
+          </Link>
+
+          {/* Producto Almacén */}
+          <Link
+            to="/dashboard/producto-almacen"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              isActive('/dashboard/producto-almacen')
+                ? 'bg-blue-700 text-white'
+                : 'text-blue-100 hover:bg-blue-700/50'
+            }`}
+          >
+            <Boxes size={20} />
+            <span>Producto Almacén</span>
+          </Link>
+
+          <h2 className="px-4 py-2 text-xs font-semibold text-blue-300 uppercase tracking-wider mt-4">
+            Ventas
+          </h2>
+
+          {/* Detalle Venta */}
+          <Link
+            to="/dashboard/detalle-venta"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              isActive('/dashboard/detalle-venta')
+                ? 'bg-blue-700 text-white'
+                : 'text-blue-100 hover:bg-blue-700/50'
+            }`}
+          >
+            <ClipboardList size={20} />
+            <span>Detalle Venta</span>
+          </Link>
+
+          {/* Ventas */}
+          <Link
+            to="/dashboard/ventas"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              isActive('/dashboard/ventas')
+                ? 'bg-blue-700 text-white'
+                : 'text-blue-100 hover:bg-blue-700/50'
+            }`}
+          >
+            <ShoppingCart size={20} />
+            <span>Ventas</span>
+          </Link>
         </nav>
 
-        {/* Security & Logout Section */}
-        <div className="absolute bottom-4 left-4 right-4 space-y-2">
+        {/* Divider */}
+        <div className="border-t border-blue-700 mx-3"></div>
+
+        {/* Security & Logout Section - Fixed */}
+        <div className="flex-shrink-0 p-4 space-y-2">
           <button
             onClick={handleEnable2FA}
-            className="w-full flex items-center gap-3 px-4 py-3 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors text-white font-medium"
+            className="w-full flex items-center gap-3 px-4 py-3 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors text-white font-medium text-sm"
           >
             <Shield size={20} />
             <span>Activar 2FA</span>
           </button>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 bg-red-600 hover:bg-red-700 rounded-lg transition-colors text-white font-medium"
+            className="w-full flex items-center gap-3 px-4 py-3 bg-red-600 hover:bg-red-700 rounded-lg transition-colors text-white font-medium text-sm"
           >
             <LogOut size={20} />
             <span>Cerrar Sesión</span>

@@ -13,52 +13,52 @@ import {
   DeleteClienteVariables
 } from '../types/auth.types';
 
-// ✅ CORREGIDO: Usar snake_case como en el backend
+// ✅ USAR EXACTAMENTE LO QUE DEVUELVE EL BACKEND SEGÚN TU EJEMPLO
 const GET_ALL_CLIENTES = gql`
   query GetAllClientes {
-    all_clientes {  # ← Cambiado de allClientes a all_clientes
+    allClientes {
       id
       nombre
       apellido
       telefono
-      activo
+      # activo  # ← Comenta esto si el backend no lo devuelve
     }
   }
 `;
 
 const CREATE_CLIENTE = gql`
   mutation CrearCliente($nombre: String!, $apellido: String!, $telefono: String) {
-    crear_cliente(nombre: $nombre, apellido: $apellido, telefono: $telefono) {  # ← Cambiado a crear_cliente
-      cliente {
-        id
-        nombre
-        apellido
-        telefono
-      }
+    crearCliente(nombre: $nombre, apellido: $apellido, telefono: $telefono) {
       ok
       mensaje
+      # cliente {  # ← Comenta esto si no viene en la respuesta
+      #   id
+      #   nombre
+      #   apellido
+      #   telefono
+      # }
     }
   }
 `;
 
 const UPDATE_CLIENTE = gql`
   mutation ActualizarCliente($id: ID!, $nombre: String, $apellido: String, $telefono: String) {
-    actualizar_cliente(id: $id, nombre: $nombre, apellido: $apellido, telefono: $telefono) {  # ← Cambiado a actualizar_cliente
-      cliente {
-        id
-        nombre
-        apellido
-        telefono
-      }
+    actualizarCliente(id: $id, nombre: $nombre, apellido: $apellido, telefono: $telefono) {
       ok
       mensaje
+      # cliente {  # ← Comenta esto si no viene en la respuesta
+      #   id
+      #   nombre
+      #   apellido
+      #   telefono
+      # }
     }
   }
 `;
 
 const DELETE_CLIENTE = gql`
   mutation EliminarCliente($id: ID!) {
-    eliminar_cliente(id: $id) {  # ← Cambiado a eliminar_cliente
+    eliminarCliente(id: $id) {
       ok
       mensaje
     }
@@ -80,10 +80,13 @@ export function ClientesPage() {
   const [updateCliente] = useMutation<UpdateClienteResponse, UpdateClienteVariables>(UPDATE_CLIENTE);
   const [deleteCliente] = useMutation<DeleteClienteResponse, DeleteClienteVariables>(DELETE_CLIENTE);
 
-  const clientes = data?.all_clientes || [];
+  // Verificar qué está llegando del backend
+  console.log('Datos recibidos:', data);
+
+  const clientes = data?.allClientes || [];
   const filteredClientes = clientes.filter((c: Cliente) =>
-    c.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.apellido.toLowerCase().includes(searchTerm.toLowerCase())
+    c.nombre?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    c.apellido?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -112,37 +115,63 @@ export function ClientesPage() {
     e.preventDefault();
     try {
       if (editingId) {
-        await updateCliente({
+        const response = await updateCliente({
           variables: {
             id: editingId,
-            ...formData
+            nombre: formData.nombre,
+            apellido: formData.apellido,
+            telefono: formData.telefono || undefined
           }
         });
+        
+        console.log('Update response:', response);
+        
+        if (!response.data?.actualizarCliente?.ok) {
+          throw new Error(response.data?.actualizarCliente?.mensaje || 'Error al actualizar');
+        }
       } else {
-        await createCliente({
-          variables: formData
+        const response = await createCliente({
+          variables: {
+            nombre: formData.nombre,
+            apellido: formData.apellido,
+            telefono: formData.telefono || undefined
+          }
         });
+        
+        console.log('Create response:', response);
+        
+        if (!response.data?.crearCliente?.ok) {
+          throw new Error(response.data?.crearCliente?.mensaje || 'Error al crear');
+        }
       }
+      
       setShowModal(false);
       setFormData({ nombre: '', apellido: '', telefono: '' });
       setEditingId(null);
       refetch();
     } catch (err) {
       console.error('Error:', err);
-      alert('Error al guardar cliente');
+      alert(err instanceof Error ? err.message : 'Error al guardar cliente');
     }
   };
 
   const handleDelete = async (id: string) => {
     if (confirm('¿Estás seguro de eliminar este cliente?')) {
       try {
-        await deleteCliente({
+        const response = await deleteCliente({
           variables: { id }
         });
+        
+        console.log('Delete response:', response);
+        
+        if (!response.data?.eliminarCliente?.ok) {
+          throw new Error(response.data?.eliminarCliente?.mensaje || 'Error al eliminar');
+        }
+        
         refetch();
       } catch (err) {
         console.error('Error:', err);
-        alert('Error al eliminar cliente');
+        alert(err instanceof Error ? err.message : 'Error al eliminar cliente');
       }
     }
   };
@@ -163,7 +192,7 @@ export function ClientesPage() {
             <Search className="absolute left-3 top-3 text-gray-400" size={20} />
             <input
               type="text"
-              placeholder="Buscar por nombre..."
+              placeholder="Buscar por nombre o apellido..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -213,14 +242,10 @@ export function ClientesPage() {
                   <td className="px-6 py-4 text-sm text-gray-900">{cliente.apellido}</td>
                   <td className="px-6 py-4 text-sm text-gray-600">{cliente.telefono || '-'}</td>
                   <td className="px-6 py-4 text-sm">
-                    {/* ✅ CORREGIDO: className fijo */}
-                    <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                      cliente.activo 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-red-100 text-red-800'
-                    }`}>
-                      {cliente.activo ? 'Activo' : 'Inactivo'}
+                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                      Activo
                     </span>
+                    {/* Si no tienes el campo activo, muestra siempre Activo o comenta esta columna */}
                   </td>
                   <td className="px-6 py-4 text-center">
                     <div className="flex justify-center gap-2">
@@ -257,11 +282,10 @@ export function ClientesPage() {
             <form onSubmit={handleSubmit}>
               <div className="space-y-3">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
                   <input
                     type="text"
                     name="nombre"
-                    placeholder="Nombre"
                     value={formData.nombre}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -269,11 +293,10 @@ export function ClientesPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Apellido</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Apellido *</label>
                   <input
                     type="text"
                     name="apellido"
-                    placeholder="Apellido"
                     value={formData.apellido}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -285,7 +308,6 @@ export function ClientesPage() {
                   <input
                     type="text"
                     name="telefono"
-                    placeholder="Teléfono"
                     value={formData.telefono}
                     onChange={handleInputChange}
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"

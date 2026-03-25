@@ -11,6 +11,10 @@ import { PersonasPage } from './pages/PersonasPage';
 import { ClientesPage } from './pages/ClientesPage';
 import { CategoriaPage } from './pages/CategoriaPage';
 import { ProductoPage } from './pages/ProductoPage';
+import { AlmacenPage } from './pages/AlmacenPage';
+import { VentaPage } from './pages/VentaPage';
+import { ProductoAlmacenPage } from './pages/ProductoAlmacenPage';
+import { DetalleVentaPage } from './pages/DetalleVentaPage';
 import { Layout } from './components/layout/Layout';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -77,6 +81,46 @@ function AppRoutes() {
           <PrivateRoute>
             <Layout>
               <ProductoPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/dashboard/almacenes"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <AlmacenPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/dashboard/ventas"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <VentaPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/dashboard/producto-almacen"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <ProductoAlmacenPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/dashboard/detalle-venta"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <DetalleVentaPage />
             </Layout>
           </PrivateRoute>
         }
