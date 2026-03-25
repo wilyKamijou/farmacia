@@ -1,0 +1,3 @@
+# Ignorar archivos settings específicos
+config/settings.py
+persona_backend/config/settings.py

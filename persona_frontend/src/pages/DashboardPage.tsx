@@ -1,367 +1,93 @@
 // src/pages/DashboardPage.tsx
-import { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client/react';
-import { gql } from '@apollo/client';
-import { useAuth } from '../contexts/AuthContext';
-import { LogOut, UserPlus, Trash2, Shield } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { Users, UserCheck, UserCog, BarChart3 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
-// ==================== TIPOS ====================
-interface Cliente {
-  id: string;
-  nombre: string;
-  apellido: string;
-  telefono: string;
-  activo: boolean;
-}
-
-interface GetAllClientesResponse {
-  allClientes: Cliente[];
-}
-
-interface CreateClienteResponse {
-  crearCliente: {
-    cliente: Cliente;
-    ok: boolean;
-    mensaje: string;
-  };
-}
-
-interface CreateClienteVariables {
-  nombre: string;
-  apellido: string;
-  telefono?: string;
-}
-
-interface DeleteClienteResponse {
-  eliminarCliente: {
-    ok: boolean;
-    mensaje: string;
-  };
-}
-
-interface DeleteClienteVariables {
-  id: string;
-}
-
-interface Enable2FAResponse {
-  enable2fa: {
-    success: boolean;
-    message: string;
-    qrCodeUrl: string;
-    secret: string;
-  };
-}
-
-interface Enable2FAVariables {
-  password: string;
-}
-
-// ==================== QUERIES Y MUTACIONES ====================
-const GET_ALL_CLIENTES = gql`
-  query {
-    allClientes {
-      id
-      nombre
-      apellido
-      telefono
-    }
-  }
-`;
-
-const CREATE_CLIENTE = gql`
-  mutation CreateCliente($nombre: String!, $apellido: String!, $telefono: String) {
-    crearCliente(
-      nombre: $nombre
-      apellido: $apellido
-      telefono: $telefono
-    ) {
-      cliente {
-        id
-        nombre
-        apellido
-        telefono
-      }
-      ok
-      mensaje
-    }
-  }
-`;
-
-const DELETE_CLIENTE = gql`
-  mutation DeleteCliente($id: ID!) {
-    eliminarCliente(id: $id) {
-      ok
-      mensaje
-    }
-  }
-`;
-
-const ENABLE_2FA = gql`
-  mutation Enable2FA($password: String!) {
-    enable2fa(password: $password) {
-      success
-      message
-      qrCodeUrl
-      secret
-    }
-  }
-`;
-
-// ==================== COMPONENTE PRINCIPAL ====================
-export const DashboardPage = () => {
-  const { user, logout } = useAuth();
-  const [showModal, setShowModal] = useState(false);
-  const [show2FAModal, setShow2FAModal] = useState(false);
-  const [qrCode, setQrCode] = useState('');
-  const [formData, setFormData] = useState({
-    nombre: '',
-    apellido: '',
-    telefono: ''
-  });
-
-  const { loading, error, data, refetch } = useQuery<GetAllClientesResponse>(GET_ALL_CLIENTES);
-  const [createCliente] = useMutation<CreateClienteResponse, CreateClienteVariables>(CREATE_CLIENTE);
-  const [deleteCliente] = useMutation<DeleteClienteResponse, DeleteClienteVariables>(DELETE_CLIENTE);
-  const [enable2FA] = useMutation<Enable2FAResponse, Enable2FAVariables>(ENABLE_2FA);
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
-
-  const handleCreateCliente = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await createCliente({
-        variables: {
-          nombre: formData.nombre,
-          apellido: formData.apellido,
-          telefono: formData.telefono
-        }
-      });
-      setShowModal(false);
-      setFormData({ nombre: '', apellido: '', telefono: '' });
-      refetch();
-    } catch (err) {
-      console.error('Error al crear cliente:', err);
-      alert('Error al crear cliente');
-    }
-  };
-
-  const handleDeleteCliente = async (id: string) => {
-    if (confirm('¿Estás seguro de eliminar este cliente?')) {
-      try {
-        await deleteCliente({
-          variables: { id }
-        });
-        refetch();
-      } catch (err) {
-        console.error('Error al eliminar:', err);
-      }
-    }
-  };
-
-  const handleEnable2FA = async () => {
-    try {
-      const password = prompt('Ingresa tu contraseña para activar 2FA:');
-      if (!password) return;
-      
-      const { data } = await enable2FA({
-        variables: { password }
-      });
-      
-      if (data?.enable2fa?.success) {
-        setQrCode(data.enable2fa.qrCodeUrl || '');
-        setShow2FAModal(true);
-      } else {
-        alert(data?.enable2fa?.message || 'Error al activar 2FA');
-      }
-    } catch (err) {
-      console.error('Error al activar 2FA:', err);
-    }
-  };
-
-  if (loading) return <div className="text-center p-8">Cargando...</div>;
-  if (error) return <div className="text-center p-8 text-red-500">Error: {error.message}</div>;
+export function DashboardPage() {
+  const cards = [
+    {
+      title: 'Personas',
+      description: 'Usuarios que pueden iniciar sesión',
+      icon: Users,
+      link: '/dashboard/personas',
+      color: 'from-blue-500 to-blue-600',
+      accent: 'blue'
+    },
+    {
+      title: 'Clientes',
+      description: 'Clientes sin acceso de login',
+      icon: UserCheck,
+      link: '/dashboard/clientes',
+      color: 'from-green-500 to-green-600',
+      accent: 'green'
+    },
+    {
+      title: 'Empleados',
+      description: 'Personal con acceso al sistema',
+      icon: UserCog,
+      link: '/dashboard/empleados',
+      color: 'from-purple-500 to-purple-600',
+      accent: 'purple'
+    },
+  ];
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      {/* Navbar */}
-      <nav className="bg-white shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-800">
-                Gestión de Clientes
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-600">
-                {user?.email}
-              </span>
-              {!user?.is2faEnabled && (
-                <button
-                  onClick={handleEnable2FA}
-                  className="flex items-center text-purple-600 hover:text-purple-800"
-                >
-                  <Shield size={20} className="mr-1" />
-                  Activar 2FA
-                </button>
-              )}
-              <button
-                onClick={logout}
-                className="flex items-center text-red-600 hover:text-red-800"
-              >
-                <LogOut size={20} className="mr-1" />
-                Salir
-              </button>
-            </div>
+    <div className="p-8">
+      {/* Header */}
+      <div className="mb-12">
+        <h1 className="text-4xl font-bold text-gray-900 mb-2">Panel de Control</h1>
+        <p className="text-gray-600 text-lg">Bienvenido a tu sistema de gestión de farmacia</p>
+      </div>
+
+      {/* Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        {cards.map((card, index) => {
+          const Icon = card.icon;
+          return (
+            <Link key={index} to={card.link}>
+              <div className="h-full bg-white rounded-lg shadow-md hover:shadow-lg transition-all hover:scale-105 overflow-hidden cursor-pointer">
+                {/* Color Header */}
+                <div className={`h-32 bg-gradient-to-r ${card.color} flex items-center justify-center`}>
+                  <Icon size={48} className="text-white" />
+                </div>
+
+                {/* Content */}
+                <div className="p-6">
+                  <h3 className="text-xl font-bold text-gray-900 mb-2">{card.title}</h3>
+                  <p className="text-gray-600 text-sm">{card.description}</p>
+                  <div className="mt-4 pt-4 border-t border-gray-200">
+                    <span className={`text-sm font-semibold text-${card.accent}-600`}>
+                      Ir a {card.title} →
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+
+      {/* Stats Section (Placeholder) */}
+      <div className="bg-white rounded-lg shadow-md p-8">
+        <div className="flex items-center gap-4 mb-6">
+          <BarChart3 size={28} className="text-blue-600" />
+          <h2 className="text-2xl font-bold text-gray-900">Resumen Rápido</h2>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg">
+            <p className="text-gray-600 text-sm font-medium mb-2">Total Personas</p>
+            <p className="text-3xl font-bold text-gray-900">-</p>
+          </div>
+          <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg">
+            <p className="text-gray-600 text-sm font-medium mb-2">Total Clientes</p>
+            <p className="text-3xl font-bold text-gray-900">-</p>
+          </div>
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg">
+            <p className="text-gray-600 text-sm font-medium mb-2">Total Empleados</p>
+            <p className="text-3xl font-bold text-gray-900">-</p>
           </div>
         </div>
-      </nav>
-
-      {/* Contenido principal */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          {/* Botón para crear cliente */}
-          <div className="mb-4">
-            <button
-              onClick={() => setShowModal(true)}
-              className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 flex items-center"
-            >
-              <UserPlus size={20} className="mr-2" />
-              Nuevo Cliente
-            </button>
-          </div>
-
-          {/* Tabla de clientes */}
-          <div className="bg-white shadow overflow-hidden sm:rounded-lg">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {data?.allClientes?.map((cliente: Cliente) => (
-                  <tr key={cliente.id}>
-                    <td className="px-6 py-4 whitespace-nowrap">{cliente.nombre} {cliente.apellido}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{cliente.telefono || '-'}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {cliente.activo ? (
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">Activo</span>
-                      ) : (
-                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">Inactivo</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <button onClick={() => handleDeleteCliente(cliente.id)} className="text-red-600 hover:text-red-900">
-                        <Trash2 size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </main>
-
-      {/* Modal para crear cliente */}
-      {showModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">Crear Nuevo Cliente</h3>
-            <form onSubmit={handleCreateCliente}>
-              <div className="space-y-3">
-                <input
-                  type="text"
-                  name="nombre"
-                  placeholder="Nombre"
-                  value={formData.nombre}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  required
-                />
-                <input
-                  type="text"
-                  name="apellido"
-                  placeholder="Apellido"
-                  value={formData.apellido}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                  required
-                />
-                <input
-                  type="text"
-                  name="telefono"
-                  placeholder="Teléfono"
-                  value={formData.telefono}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                />
-              </div>
-              <div className="mt-4 flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-                >
-                  Crear
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Modal para mostrar QR de 2FA */}
-      {show2FAModal && qrCode && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
-            <h3 className="text-lg font-medium leading-6 text-gray-900 mb-4">
-              Activar Google Authenticator
-            </h3>
-            <div className="text-center">
-              <p className="mb-4 text-gray-600">
-                1. Instala Google Authenticator en tu teléfono
-              </p>
-              <p className="mb-4 text-gray-600">
-                2. Escanea este código QR:
-              </p>
-              <div className="flex justify-center mb-4">
-                <QRCodeSVG value={qrCode} size={200} />
-              </div>
-              <p className="mb-4 text-gray-600 text-sm">
-                O ingresa manualmente este código:
-              </p>
-              <div className="bg-gray-100 p-3 rounded mb-4">
-                <code className="text-sm break-all font-mono">
-                  {qrCode.split('secret=')[1]?.split('&')[0]}
-                </code>
-              </div>
-              <button
-                onClick={() => setShow2FAModal(false)}
-                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
-              >
-                Cerrar
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
-};
+}

@@ -3,7 +3,7 @@ from django.db import models
 from django.contrib.auth.models import AbstractUser
 import pyotp
 
-class Cliente(models.Model):  # ❌ Quitar AbstractUser
+class Cliente(models.Model): 
     """Cliente - NO inicia sesión"""
     nombre = models.CharField(max_length=100)
     apellido = models.CharField(max_length=100)
@@ -18,7 +18,7 @@ class Cliente(models.Model):  # ❌ Quitar AbstractUser
 
 from django.contrib.auth.models import AbstractUser
 
-class Empleado(AbstractUser):  # ✅ Hereda de AbstractUser
+class Empleado(AbstractUser):  
     """Empleado - Puede iniciar sesión"""
     # Campos adicionales
     telefono_em = models.CharField(max_length=20, blank=True, null=True)

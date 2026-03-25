@@ -7,6 +7,11 @@ import { LoginForm } from './components/auth/LoginForm';
 import { RegisterPage } from './pages/RegisterPage';
 import { OTPPage } from './pages/OTPPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { PersonasPage } from './pages/PersonasPage';
+import { ClientesPage } from './pages/ClientesPage';
+import { CategoriaPage } from './pages/CategoriaPage';
+import { ProductoPage } from './pages/ProductoPage';
+import { Layout } from './components/layout/Layout';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -24,11 +29,55 @@ function AppRoutes() {
       <Route path="/login" element={<LoginForm />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/verify-otp" element={<OTPPage />} />
+      
+      {/* Dashboard Routes - With Sidebar */}
       <Route
         path="/dashboard"
         element={
           <PrivateRoute>
-            <DashboardPage />
+            <Layout>
+              <DashboardPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/dashboard/empleados"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <PersonasPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/dashboard/clientes"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <ClientesPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/dashboard/categorias"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <CategoriaPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/dashboard/productos"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <ProductoPage />
+            </Layout>
           </PrivateRoute>
         }
       />
