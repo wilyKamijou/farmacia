@@ -4,6 +4,8 @@ interface CarritoItem {
   id: number;
   productoId: string;
   productoNombre: string;
+  almacenId: string;
+  productoAlmacenId: string;  // ← Agregar
   cantidad: number;
   precio: number;
   stockDisponible: number;

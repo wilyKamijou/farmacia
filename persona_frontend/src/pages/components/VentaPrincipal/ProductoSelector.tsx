@@ -20,7 +20,7 @@ interface ProductoSelectorProps {
 
 interface StockResponse {
   productosAlmacenPorProducto: {
-    id: string;
+    id: string;  // ← Este es el ID del registro ProductoAlmacen
     almacen: {
       id: string;
       nombreAm: string;
@@ -61,17 +61,29 @@ const ProductoSelector = ({ productos, onAgregarProducto }: ProductoSelectorProp
     console.log('🖱️ Seleccionando producto:', producto.nombrePr);
     setSelectedProducto(producto);
     
-    // Esperar los datos de stock
     const { data } = await refetchStock({ productoId: producto.id });
     console.log('📦 Datos de stock:', data);
     
-    // Abrir modal solo si hay datos de stock
     if (data?.productosAlmacenPorProducto && data.productosAlmacenPorProducto.length > 0) {
       setShowModal(true);
     } else {
       alert('Este producto no tiene stock disponible en ningún almacén');
     }
   };
+
+  // Función para manejar la adición desde el modal
+ // En ProductoSelector.tsx
+const handleAgregarDesdeModal = (producto: any, stockInfo: any, cantidad: number, precio: number) => {
+  // Crear objeto con toda la información que necesita el carrito
+  const almacenConInfo = {
+    id: stockInfo.almacen.id,
+    idRegistro: stockInfo.id,  // ← ID del registro ProductoAlmacen
+    nombreAm: stockInfo.almacen.nombreAm,
+    stock: stockInfo.stock
+  };
+  
+  onAgregarProducto(producto, almacenConInfo, cantidad, precio);
+};
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
@@ -111,7 +123,6 @@ const ProductoSelector = ({ productos, onAgregarProducto }: ProductoSelectorProp
         )}
       </div>
 
-      {/* Modal - se abrirá solo cuando los datos de stock estén listos */}
       {showModal && (
         <ModalProducto
           isOpen={showModal}
@@ -121,7 +132,7 @@ const ProductoSelector = ({ productos, onAgregarProducto }: ProductoSelectorProp
             setShowModal(false);
             setSelectedProducto(null);
           }}
-          onAgregar={onAgregarProducto}
+          onAgregar={handleAgregarDesdeModal}  // ← Usar la función que incluye el idRegistro
         />
       )}
     </div>

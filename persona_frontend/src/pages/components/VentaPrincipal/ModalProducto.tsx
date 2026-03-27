@@ -7,7 +7,7 @@ interface Almacen {
 }
 
 interface StockInfo {
-  id: string;
+  id: string;  // ← Este es el ID del registro ProductoAlmacen
   almacen: Almacen;
   stock: number;
 }
@@ -16,7 +16,7 @@ interface Producto {
   id: string;
   nombrePr: string;
   nombreTc: string;
-  precio?: number;  // ← Precio opcional
+  precio?: number;
 }
 
 interface ModalProductoProps {
@@ -24,17 +24,17 @@ interface ModalProductoProps {
   producto: Producto | null;
   stockInfo: StockInfo[];
   onClose: () => void;
-  onAgregar: (producto: Producto, almacen: Almacen, cantidad: number, precio: number) => void;
+  onAgregar: (producto: Producto, stockInfoCompleto: StockInfo, cantidad: number, precio: number) => void;
 }
 
 const ModalProducto = ({ isOpen, producto, stockInfo, onClose, onAgregar }: ModalProductoProps) => {
   const [cantidad, setCantidad] = useState<number>(1);
-  const [almacenSeleccionado, setAlmacenSeleccionado] = useState<Almacen | null>(null);
+  const [stockSeleccionado, setStockSeleccionado] = useState<StockInfo | null>(null);
 
   if (!isOpen || !producto) return null;
 
   const handleAgregar = (): void => {
-    if (!almacenSeleccionado) {
+    if (!stockSeleccionado) {
       alert('Selecciona un almacén');
       return;
     }
@@ -42,18 +42,17 @@ const ModalProducto = ({ isOpen, producto, stockInfo, onClose, onAgregar }: Moda
       alert('La cantidad debe ser mayor a 0');
       return;
     }
-    
-    const stockActual = stockInfo.find(s => s.almacen.id === almacenSeleccionado.id)?.stock || 0;
-    if (cantidad > stockActual) {
-      alert(`Stock insuficiente. Solo hay ${stockActual} unidades disponibles`);
+    if (cantidad > stockSeleccionado.stock) {
+      alert(`Stock insuficiente. Solo hay ${stockSeleccionado.stock} unidades disponibles`);
       return;
     }
     
     const precioProducto = producto.precio || 0;
-    onAgregar(producto, almacenSeleccionado, cantidad, precioProducto);
+    // ✅ Pasar stockSeleccionado completo (incluye id, almacen, stock)
+    onAgregar(producto, stockSeleccionado, cantidad, precioProducto);
     onClose();
     setCantidad(1);
-    setAlmacenSeleccionado(null);
+    setStockSeleccionado(null);
   };
 
   return (
@@ -78,16 +77,16 @@ const ModalProducto = ({ isOpen, producto, stockInfo, onClose, onAgregar }: Moda
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Almacén</label>
               <select
-                value={almacenSeleccionado?.id || ''}
+                value={stockSeleccionado?.id || ''}
                 onChange={(e) => {
-                  const selected = stockInfo.find(s => s.almacen.id === e.target.value);
-                  setAlmacenSeleccionado(selected?.almacen || null);
+                  const selected = stockInfo.find(s => s.id === e.target.value);
+                  setStockSeleccionado(selected || null);
                 }}
                 className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Seleccionar almacén</option>
                 {stockInfo.map((stock) => (
-                  <option key={stock.id} value={stock.almacen.id}>
+                  <option key={stock.id} value={stock.id}>
                     {stock.almacen.nombreAm} - Stock: {stock.stock} unidades
                   </option>
                 ))}
@@ -99,13 +98,13 @@ const ModalProducto = ({ isOpen, producto, stockInfo, onClose, onAgregar }: Moda
               <input
                 type="number"
                 min="1"
-                max={stockInfo.find(s => s.almacen.id === almacenSeleccionado?.id)?.stock || 0}
+                max={stockSeleccionado?.stock || 0}
                 value={cantidad}
                 onChange={(e) => setCantidad(parseInt(e.target.value) || 1)}
                 className="w-full p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Stock disponible: {stockInfo.find(s => s.almacen.id === almacenSeleccionado?.id)?.stock || 0} unidades
+                Stock disponible: {stockSeleccionado?.stock || 0} unidades
               </p>
             </div>
           </>
@@ -122,7 +121,7 @@ const ModalProducto = ({ isOpen, producto, stockInfo, onClose, onAgregar }: Moda
           <button
             type="button"
             onClick={handleAgregar}
-            disabled={stockInfo.length === 0 || !almacenSeleccionado}
+            disabled={stockInfo.length === 0 || !stockSeleccionado}
             className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             Agregar al Carrito
