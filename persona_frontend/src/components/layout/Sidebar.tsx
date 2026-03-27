@@ -97,6 +97,20 @@ export function Sidebar() {
             Inventario
           </h2>
 
+          {/* ModuloInventario */}
+             <Link
+            to="/dashboard/ModuloInventario"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              isActive('/dashboard/ModuloInventario')
+                ? 'bg-blue-700 text-white'
+                : 'text-blue-100 hover:bg-blue-700/50'
+            }`}
+
+            
+          >
+            <Tag size={20} />
+            <span>Gestion de Productos</span>
+          </Link>  
           {/* Categorías */}
           <Link
             to="/dashboard/categorias"
@@ -152,6 +166,20 @@ export function Sidebar() {
           <h2 className="px-4 py-2 text-xs font-semibold text-blue-300 uppercase tracking-wider mt-4">
             Ventas
           </h2>
+
+           {/* modulo venta */}
+          <Link
+            to="/dashboard/ModuloVentas"
+            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+              isActive('/dashboard/ModuloVentas')
+                ? 'bg-blue-700 text-white'
+                : 'text-blue-100 hover:bg-blue-700/50'
+            }`}
+          >
+            <ClipboardList size={20} />
+            <span>Modulo de ventas</span>
+          </Link>
+      
 
           {/* Detalle Venta */}
           <Link

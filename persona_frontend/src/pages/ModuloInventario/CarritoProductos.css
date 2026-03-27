@@ -1,0 +1,154 @@
+
+        .carrito-productos {
+          background-color: white;
+          border-radius: 0.75rem;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          padding: 1.5rem;
+          margin-top: 1rem;
+        }
+
+        .carrito-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 1rem;
+          padding-bottom: 0.5rem;
+          border-bottom: 1px solid #e5e7eb;
+        }
+
+        .carrito-header h3 {
+          font-size: 1rem;
+          font-weight: 600;
+          color: #1f2937;
+          margin: 0;
+        }
+
+        .btn-registrar-todos {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+          padding: 0.5rem 1rem;
+          background-color: #10b981;
+          color: white;
+          border: none;
+          border-radius: 0.5rem;
+          font-size: 0.875rem;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+
+        .btn-registrar-todos:hover {
+          background-color: #059669;
+        }
+
+        .carrito-lista {
+          max-height: 300px;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 0.75rem;
+        }
+
+        .carrito-item {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 0.75rem;
+          background-color: #f9fafb;
+          border-radius: 0.5rem;
+          gap: 1rem;
+        }
+
+        .carrito-item-info {
+          flex: 2;
+        }
+
+        .carrito-item-nombre {
+          font-weight: 500;
+          color: #1f2937;
+        }
+
+        .carrito-item-desc {
+          font-size: 0.75rem;
+          color: #6b7280;
+        }
+
+        .carrito-item-almacen {
+          font-size: 0.7rem;
+          color: #3b82f6;
+          margin-top: 0.25rem;
+        }
+
+        .carrito-item-cantidad {
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+
+        .cantidad-btn {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 1.75rem;
+          height: 1.75rem;
+          background-color: #e5e7eb;
+          border: none;
+          border-radius: 0.375rem;
+          cursor: pointer;
+          transition: background-color 0.2s;
+        }
+
+        .cantidad-btn:hover:not(:disabled) {
+          background-color: #d1d5db;
+        }
+
+        .cantidad-btn:disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+        }
+
+        .cantidad-valor {
+          width: 2rem;
+          text-align: center;
+          font-size: 0.875rem;
+          font-weight: 500;
+        }
+
+        .carrito-item-eliminar {
+          background: none;
+          border: none;
+          color: #ef4444;
+          cursor: pointer;
+          padding: 0.25rem;
+          border-radius: 0.25rem;
+          transition: background-color 0.2s;
+        }
+
+        .carrito-item-eliminar:hover {
+          background-color: #fee2e2;
+        }
+
+        .carrito-vacio {
+          background-color: white;
+          border-radius: 0.75rem;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          padding: 2rem;
+          text-align: center;
+          color: #6b7280;
+          margin-top: 1rem;
+        }
+
+        /* ==================== CARRITO STICKY ==================== */
+.inventario-col-right {
+  position: sticky;
+  top: 1rem;  /* Distancia desde la parte superior */
+  align-self: start;  /* Para que no se estire */
+}
+
+/* También asegura que el carrito tenga altura máxima y scroll interno */
+.carrito-productos {
+  max-height: calc(100vh - 2rem);  /* Altura máxima */
+  overflow-y: auto;  /* Scroll interno si es necesario */
+  display: flex;
+  flex-direction: column;
+}

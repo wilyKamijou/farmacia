@@ -16,6 +16,8 @@ import { VentaPage } from './pages/VentaPage';
 import { ProductoAlmacenPage } from './pages/ProductoAlmacenPage';
 import { DetalleVentaPage } from './pages/DetalleVentaPage';
 import { Layout } from './components/layout/Layout';
+import { VentasPage } from './pages/moduloVenta/VentasPage';
+import { Inventario } from './pages/ModuloInventario/Inventario';
 
 const PrivateRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, loading } = useAuth();
@@ -95,6 +97,17 @@ function AppRoutes() {
           </PrivateRoute>
         }
       />
+      <Route 
+        path='/dashboard/ModuloVentas'
+        element={
+          <PrivateRoute>
+            <Layout>
+              <VentasPage />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+
       <Route
         path="/dashboard/ventas"
         element={
@@ -125,6 +138,18 @@ function AppRoutes() {
           </PrivateRoute>
         }
       />
+
+         <Route
+        path="/dashboard/ModuloInventario"
+        element={
+          <PrivateRoute>
+            <Layout>
+              <Inventario />
+            </Layout>
+          </PrivateRoute>
+        }
+      />
+      
       <Route path="/" element={<Navigate to="/login" />} />
     </Routes>
   );
