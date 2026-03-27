@@ -6,9 +6,9 @@ interface LayoutProps {
 
 export function Layout({ children }: LayoutProps) {
   return (
-    <div className="flex">
+    <div className="flex" style={{ overflowX: 'hidden', minHeight: '100vh', width: '100vw', minWidth: 0 }}>
       <Sidebar />
-      <main className="ml-64 flex-1 bg-gray-50 min-h-screen">
+      <main className="flex-1" style={{ marginLeft: 280, minWidth: 0, width: 'calc(100vw - 280px)', background: '#f7f8fa' }}>
         {children}
       </main>
     </div>

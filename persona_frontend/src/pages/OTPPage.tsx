@@ -23,7 +23,7 @@ export const OTPPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { login: authLogin } = useAuth();
-  const { userId, email } = location.state || {};
+  const { userId } = location.state || {}; 
 
   // 👇 TIPAR LA MUTACIÓN
   const [verifyOTP, { loading }] = useMutation<OTPMutationResponse, OTPVariables>(VERIFY_OTP_MUTATION);

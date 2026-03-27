@@ -6,6 +6,7 @@ import { gql } from '@apollo/client';
 import { useState } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import { Enable2FAResponse, Enable2FAVariables } from '../../types/auth.types';
+import '../../styles/dashboard.css';
 
 const ENABLE_2FA = gql`
   mutation Enable2FA($password: String!) {
@@ -17,6 +18,19 @@ const ENABLE_2FA = gql`
     }
   }
 `;
+
+const menuItems = [
+  { label: 'Empleados', path: '/dashboard/empleados', icon: Users },
+  { label: 'Clientes', path: '/dashboard/clientes', icon: UserCheck },
+  { label: 'Gestion de Productos', path: '/dashboard/ModuloInventario', icon: Tag },
+  { label: 'Categorías', path: '/dashboard/categorias', icon: Tag },
+  { label: 'Productos', path: '/dashboard/productos', icon: Package },
+  { label: 'Almacenes', path: '/dashboard/almacenes', icon: Warehouse },
+  { label: 'Producto Almacén', path: '/dashboard/producto-almacen', icon: Boxes },
+  { label: 'Modulo de ventas', path: '/dashboard/ModuloVentas', icon: ClipboardList },
+  { label: 'Detalle Venta', path: '/dashboard/detalle-venta', icon: ClipboardList },
+  { label: 'Ventas', path: '/dashboard/ventas', icon: ShoppingCart }
+];
 
 export function Sidebar() {
   const location = useLocation();
@@ -35,11 +49,9 @@ export function Sidebar() {
     try {
       const password = prompt('Ingresa tu contraseña para activar 2FA:');
       if (!password) return;
-      
-      const { data } = await enable2FA({
-        variables: { password }
-      });
-      
+
+      const { data } = await enable2FA({ variables: { password } });
+
       if (data?.enable2fa?.success) {
         setQrCode(data.enable2fa.qrCodeUrl || '');
         setShow2FAModal(true);
@@ -54,206 +66,51 @@ export function Sidebar() {
 
   return (
     <>
-      <aside className="w-64 bg-gradient-to-b from-blue-900 to-blue-800 text-white h-screen fixed left-0 top-0 shadow-lg flex flex-col">
-        {/* Header */}
-        <div className="p-6 border-b border-blue-700">
-          <h1 className="text-2xl font-bold">Farmacia</h1>
-          <p className="text-blue-200 text-sm mt-1">Panel de Control</p>
+      <aside className="dashboard-sidebar">
+        <div className="dashboard-sidebar-header">
+          <h1 className="dashboard-sidebar-title">Farmacia</h1>
+          <p className="dashboard-sidebar-subtitle">Panel de Control</p>
         </div>
 
-        {/* Navigation Menu - Scrollable */}
-        <nav className="flex-1 overflow-y-auto p-4 space-y-2">
-          <h2 className="px-4 py-2 text-xs font-semibold text-blue-300 uppercase tracking-wider">
-            Gestión
-          </h2>
-
-          {/* Empleados */}
-          <Link
-            to="/dashboard/empleados"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              isActive('/dashboard/personas') || isActive('/dashboard/empleados')
-                ? 'bg-blue-700 text-white'
-                : 'text-blue-100 hover:bg-blue-700/50'
-            }`}
-          >
-            <Users size={20} />
-            <span>Empleados</span>
-          </Link>
-
-          {/* Clientes */}
-          <Link
-            to="/dashboard/clientes"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              isActive('/dashboard/clientes')
-                ? 'bg-blue-700 text-white'
-                : 'text-blue-100 hover:bg-blue-700/50'
-            }`}
-          >
-            <UserCheck size={20} />
-            <span>Clientes</span>
-          </Link>
-
-          <h2 className="px-4 py-2 text-xs font-semibold text-blue-300 uppercase tracking-wider mt-4">
-            Inventario
-          </h2>
-
-          {/* ModuloInventario */}
-             <Link
-            to="/dashboard/ModuloInventario"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              isActive('/dashboard/ModuloInventario')
-                ? 'bg-blue-700 text-white'
-                : 'text-blue-100 hover:bg-blue-700/50'
-            }`}
-
-            
-          >
-            <Tag size={20} />
-            <span>Gestion de Productos</span>
-          </Link>  
-          {/* Categorías */}
-          <Link
-            to="/dashboard/categorias"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              isActive('/dashboard/categorias')
-                ? 'bg-blue-700 text-white'
-                : 'text-blue-100 hover:bg-blue-700/50'
-            }`}
-          >
-            <Tag size={20} />
-            <span>Categorías</span>
-          </Link>
-
-          {/* Productos */}
-          <Link
-            to="/dashboard/productos"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              isActive('/dashboard/productos')
-                ? 'bg-blue-700 text-white'
-                : 'text-blue-100 hover:bg-blue-700/50'
-            }`}
-          >
-            <Package size={20} />
-            <span>Productos</span>
-          </Link>
-
-          {/* Almacenes */}
-          <Link
-            to="/dashboard/almacenes"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              isActive('/dashboard/almacenes')
-                ? 'bg-blue-700 text-white'
-                : 'text-blue-100 hover:bg-blue-700/50'
-            }`}
-          >
-            <Warehouse size={20} />
-            <span>Almacenes</span>
-          </Link>
-
-          {/* Producto Almacén */}
-          <Link
-            to="/dashboard/producto-almacen"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              isActive('/dashboard/producto-almacen')
-                ? 'bg-blue-700 text-white'
-                : 'text-blue-100 hover:bg-blue-700/50'
-            }`}
-          >
-            <Boxes size={20} />
-            <span>Producto Almacén</span>
-          </Link>
-
-          <h2 className="px-4 py-2 text-xs font-semibold text-blue-300 uppercase tracking-wider mt-4">
-            Ventas
-          </h2>
-
-           {/* modulo venta */}
-          <Link
-            to="/dashboard/ModuloVentas"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              isActive('/dashboard/ModuloVentas')
-                ? 'bg-blue-700 text-white'
-                : 'text-blue-100 hover:bg-blue-700/50'
-            }`}
-          >
-            <ClipboardList size={20} />
-            <span>Modulo de ventas</span>
-          </Link>
-      
-
-          {/* Detalle Venta */}
-          <Link
-            to="/dashboard/detalle-venta"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              isActive('/dashboard/detalle-venta')
-                ? 'bg-blue-700 text-white'
-                : 'text-blue-100 hover:bg-blue-700/50'
-            }`}
-          >
-            <ClipboardList size={20} />
-            <span>Detalle Venta</span>
-          </Link>
-
-          {/* Ventas */}
-          <Link
-            to="/dashboard/ventas"
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
-              isActive('/dashboard/ventas')
-                ? 'bg-blue-700 text-white'
-                : 'text-blue-100 hover:bg-blue-700/50'
-            }`}
-          >
-            <ShoppingCart size={20} />
-            <span>Ventas</span>
-          </Link>
+        <nav className="dashboard-nav">
+          <h2 className="sidebar-section-title">Navegación</h2>
+          {menuItems.map(({ label, path, icon: Icon }) => (
+            <Link
+              key={path}
+              to={path}
+              className={`sidebar-item ${isActive(path) ? 'active' : ''}`}
+            >
+              <Icon size={18} />
+              <span>{label}</span>
+            </Link>
+          ))}
         </nav>
 
-        {/* Divider */}
-        <div className="border-t border-blue-700 mx-3"></div>
-
-        {/* Security & Logout Section - Fixed */}
-        <div className="flex-shrink-0 p-4 space-y-2">
-          <button
-            onClick={handleEnable2FA}
-            className="w-full flex items-center gap-3 px-4 py-3 bg-yellow-600 hover:bg-yellow-700 rounded-lg transition-colors text-white font-medium text-sm"
-          >
-            <Shield size={20} />
-            <span>Activar 2FA</span>
+        <div className="sidebar-footer">
+          <button className="sidebar-action secondary" onClick={handleEnable2FA}>
+            <Shield size={14} />
+            Activar 2FA
           </button>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-3 px-4 py-3 bg-red-600 hover:bg-red-700 rounded-lg transition-colors text-white font-medium text-sm"
-          >
-            <LogOut size={20} />
-            <span>Cerrar Sesión</span>
+          <button className="sidebar-action logout" onClick={handleLogout}>
+            <LogOut size={14} />
+            Cerrar Sesión
           </button>
         </div>
       </aside>
 
-      {/* Modal para mostrar QR de 2FA */}
       {show2FAModal && qrCode && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex justify-center items-center">
           <div className="bg-white p-8 border rounded-lg shadow-lg w-96">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
-              Activar Google Authenticator
-            </h3>
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Activar Google Authenticator</h3>
             <div className="text-center">
-              <p className="mb-4 text-gray-600">
-                1. Instala Google Authenticator en tu teléfono
-              </p>
-              <p className="mb-4 text-gray-600">
-                2. Escanea este código QR:
-              </p>
+              <p className="mb-4 text-gray-600">1. Instala Google Authenticator en tu teléfono</p>
+              <p className="mb-4 text-gray-600">2. Escanea este código QR:</p>
               <div className="flex justify-center mb-4">
                 <QRCodeSVG value={qrCode} size={200} />
               </div>
-              <p className="mb-4 text-gray-600 text-sm">
-                O ingresa manualmente este código:
-              </p>
+              <p className="mb-4 text-gray-600 text-sm">O ingresa manualmente este código:</p>
               <div className="bg-gray-100 p-3 rounded mb-4">
-                <code className="text-sm break-all font-mono">
-                  {qrCode.split('secret=')[1]?.split('&')[0]}
-                </code>
+                <code className="text-sm break-all font-mono">{qrCode.split('secret=')[1]?.split('&')[0]}</code>
               </div>
               <button
                 onClick={() => setShow2FAModal(false)}

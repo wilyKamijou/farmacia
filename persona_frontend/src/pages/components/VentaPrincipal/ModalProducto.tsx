@@ -64,7 +64,7 @@ const ModalProducto = ({ isOpen, producto, stockInfo, onClose, onAgregar }: Moda
           <p className="text-sm text-gray-500">{producto.nombreTc}</p>
           {producto.precio && (
             <p className="text-sm text-green-600 font-medium mt-1">
-              Precio: Q{producto.precio.toFixed(2)}
+              Precio: Bs. {producto.precio.toFixed(2)}
             </p>
           )}
         </div>

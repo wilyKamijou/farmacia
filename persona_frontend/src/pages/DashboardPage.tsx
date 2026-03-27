@@ -1,5 +1,5 @@
 // src/pages/DashboardPage.tsx
-import { Users, UserCheck, UserCog, BarChart3, AlertCircle, TrendingUp } from 'lucide-react';
+import { Users, UserCheck, UserCog } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@apollo/client/react';
 import { gql } from '@apollo/client';
@@ -9,6 +9,7 @@ import {
   GetReporteCompletoResponse,
   GetVentasPorMesResponse
 } from '../types/dashboard.types';
+import '../styles/dashboard.css';
 
 // ==================== QUERIES ====================
 const GET_TOTALES_USUARIOS = gql`
@@ -127,6 +128,7 @@ export function DashboardPage() {
   const totales = dataReporte?.reporteCompleto?.usuarios || dataTotales?.totalesUsuarios;
   const productosProximos = dataReporte?.reporteCompleto?.productosProximoVencer || 
                             dataProductos?.productosProximoVencimiento || [];
+  const isLoadingGlobal = loadingReporte || loadingTotales || loadingProductos || loadingVentas;
 
   const cards = [
     {
@@ -161,225 +163,188 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="p-8">
-      <div className="mb-12">
-        <h1 className="text-4xl font-bold text-gray-900 mb-2">Panel de Control</h1>
-        <p className="text-gray-600 text-lg">Bienvenido a tu sistema de gestión de farmacia</p>
-      </div>
+    <div className="dashboard-main">
+      <div className="dashboard-main-inner">
+        <header className="dashboard-header">
+        <div>
+          <h1 className="dashboard-title">Panel administrativo moderno</h1>
+          <p className="dashboard-subtitle">Tablero SaaS de farmacia con métricas clave e inventario</p>
+        </div>
 
-      {/* Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="dashboard-topbar-controls">
+          <input className="dashboard-search" placeholder="Buscar pacientes, productos o ventas..." />
+          <button className="dashboard-avatar" title="Cuenta">
+            <span>👤</span>
+            <span>Admin</span>
+          </button>
+        </div>
+      </header>
+
+      {isLoadingGlobal && (
+        <div className="table-card" style={{ marginBottom: '1rem' }}>
+          <p style={{ margin: 0, color: '#41736b', fontWeight: 600 }}>
+            Cargando datos, por favor espera...
+          </p>
+        </div>
+      )}
+
+      <section className="stats-grid">
         {cards.map((card, index) => {
           const Icon = card.icon;
           return (
-            <Link key={index} to={card.link}>
-              <div className="h-full bg-white rounded-lg shadow-md hover:shadow-lg transition-all hover:scale-105 overflow-hidden cursor-pointer">
-                <div className={`h-32 bg-gradient-to-r ${card.color} flex items-center justify-center`}>
-                  <Icon size={48} className="text-white" />
+            <Link key={index} to={card.link} className="stat-card" title={card.description}>
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <h3>{card.title}</h3>
+                  <p style={{ fontSize: '0.78rem', color: '#637a81', margin: '0.35rem 0 0 0' }}>{card.description}</p>
                 </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900 mb-2">{card.title}</h3>
-                  <p className="text-gray-600 text-sm">{card.description}</p>
-                  <div className="mt-4 pt-4 border-t border-gray-200">
-                    <span className={`text-sm font-semibold text-${card.accent}-600`}>
-                      Ir a {card.title} →
-                    </span>
-                  </div>
+                <div className="stat-card-icon" style={{ background: '#edf7f3' }}>
+                  <Icon size={24} color="#238060" />
                 </div>
               </div>
             </Link>
           );
         })}
-      </div>
+      </section>
 
-      {/* Stats Section */}
-      <div className="bg-white rounded-lg shadow-md p-8 mb-8">
-        <div className="flex items-center gap-4 mb-6">
-          <BarChart3 size={28} className="text-blue-600" />
-          <h2 className="text-2xl font-bold text-gray-900">Resumen Rápido</h2>
+      <section className="table-card">
+        <div className="card-row">
+          <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#1f4c45' }}>Resumen rápido</h2>
         </div>
-        
-        {loadingTotales && !totales ? (
-          <div className="flex justify-center py-8">
-            <p className="text-gray-500">Cargando datos...</p>
+        <div className="stats-grid">
+          <div className="stat-card" style={{ borderLeft: '4px solid #5dcd8d' }}>
+            <h3>Total Clientes</h3>
+            <p className="number">{totales?.totalClientes ?? 0}</p>
+            <span className="badge badge-green">Activo</span>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg">
-              <p className="text-gray-600 text-sm font-medium mb-2">Total Clientes</p>
-              <p className="text-3xl font-bold text-gray-900">
-                {totales?.totalClientes ?? 0}
-              </p>
-            </div>
-            <div className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-lg">
-              <p className="text-gray-600 text-sm font-medium mb-2">Total Empleados</p>
-              <p className="text-3xl font-bold text-gray-900">
-                {totales?.totalEmpleados ?? 0}
-              </p>
-            </div>
-            <div className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-lg">
-              <p className="text-gray-600 text-sm font-medium mb-2">Empleados Activos</p>
-              <p className="text-3xl font-bold text-gray-900">
-                {totales?.empleadosActivos ?? 0}
-              </p>
-            </div>
+          <div className="stat-card" style={{ borderLeft: '4px solid #f4c959' }}>
+            <h3>Total Empleados</h3>
+            <p className="number">{totales?.totalEmpleados ?? 0}</p>
+            <span className="badge badge-yellow">Normal</span>
           </div>
-        )}
-      </div>
+          <div className="stat-card" style={{ borderLeft: '4px solid #f06f5a' }}>
+            <h3>Empleados Activos</h3>
+            <p className="number">{totales?.empleadosActivos ?? 0}</p>
+            <span className="badge badge-red">Monitorear</span>
+          </div>
+        </div>
+      </section>
 
-      {/* Reporte de Productos Próximos a Vencer */}
-      <div className="bg-white rounded-lg shadow-md p-8">
-        <div className="flex items-center gap-4 mb-6">
-          <AlertCircle size={28} className="text-red-600" />
-          <h2 className="text-2xl font-bold text-gray-900">Productos Próximos a Vencer (90 días)</h2>
+      <section className="table-card">
+        <div className="table-panel">
+          <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#1f4c45' }}>
+            Productos próximos a vencer (90 días)
+          </h2>
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+            <button type="button">Filtrar</button>
+            <select defaultValue="90">
+              <option value="30">30 días</option>
+              <option value="60">60 días</option>
+              <option value="90">90 días</option>
+              <option value="120">120 días</option>
+            </select>
+          </div>
         </div>
 
-        {loadingProductos && productosProximos.length === 0 ? (
-          <div className="flex justify-center py-8">
-            <p className="text-gray-500">Cargando reporte...</p>
-          </div>
-        ) : productosProximos.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <p className="text-green-600">✓ No hay productos próximos a vencer en los próximos 90 días</p>
-            </div>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-100 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Producto</th>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Nombre Técnico</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Categoría</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Fabricación</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Vencimiento</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Días</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Stock</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Urgencia</th>
-                </tr>
-              </thead>
-              <tbody>
-                {productosProximos.map((producto) => (
-                  <tr key={producto.id} className="border-b border-gray-200 hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {producto.nombreComercial || '-'}
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-600">
-                      {producto.nombreTecnico || '-'}
-                    </td>
-                    <td className="px-6 py-4 text-center text-sm text-gray-600">
-                      {producto.categoria || '-'}
-                    </td>
-                    <td className="px-6 py-4 text-center text-sm text-gray-600">
-                      {formatDateSafe(producto.fechaFabricacion)}
-                    </td>
-                    <td className="px-6 py-4 text-center text-sm text-gray-600">
-                      {formatDateSafe(producto.fechaVencimiento)}
-                    </td>
-                    <td className="px-6 py-4 text-center text-sm font-semibold">
-                      <span className={`px-2 py-1 rounded-full text-xs ${
-                        producto.diasFaltantes <= 30 
-                          ? 'bg-red-100 text-red-800' 
-                          : producto.diasFaltantes <= 60 
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-green-100 text-green-800'
-                      }`}>
-                        {producto.diasFaltantes} días
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center text-sm text-gray-600">
-                      {producto.stockTotal ?? 0}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex justify-center items-center gap-2">
-                        <div className="w-32 bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`h-2 rounded-full transition-all ${
-                              (producto.porcentajeUrgencia || 0) > 75
-                                ? 'bg-red-500'
-                                : (producto.porcentajeUrgencia || 0) > 50
-                                ? 'bg-yellow-500'
-                                : 'bg-green-500'
-                            }`}
-                            style={{ width: `${Math.min(100, producto.porcentajeUrgencia || 0)}%` }}
-                          />
-                        </div>
-                        <span className="text-xs font-semibold text-gray-600 min-w-[40px]">
-                          {Math.round(producto.porcentajeUrgencia || 0)}%
-                        </span>
+        <div className="table-wrapper">
+          <table className="dashboard-table">
+            <thead>
+              <tr>
+                <th>Producto</th>
+                <th>Nombre Técnico</th>
+                <th>Categoría</th>
+                <th>Fabricación</th>
+                <th>Vencimiento</th>
+                <th>Días</th>
+                <th>Stock</th>
+                <th>Urgencia</th>
+              </tr>
+            </thead>
+            <tbody>
+              {productosProximos.map((producto) => (
+                <tr key={producto.id}>
+                  <td>{producto.nombreComercial || '-'}</td>
+                  <td>{producto.nombreTecnico || '-'}</td>
+                  <td>{producto.categoria || '-'}</td>
+                  <td>{formatDateSafe(producto.fechaFabricacion)}</td>
+                  <td>{formatDateSafe(producto.fechaVencimiento)}</td>
+                  <td>
+                    <span
+                      className={`badge ${
+                        producto.diasFaltantes <= 30
+                          ? 'badge-red'
+                          : producto.diasFaltantes <= 60
+                          ? 'badge-yellow'
+                          : 'badge-green'
+                      }`}
+                    >
+                      {producto.diasFaltantes} días
+                    </span>
+                  </td>
+                  <td>{producto.stockTotal ?? 0}</td>
+                  <td>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                      <div className="progress-bar" style={{ width: '140px', background: '#ebf4f2', borderRadius: '99px', overflow: 'hidden', height: '8px' }}>
+                        <div
+                          style={{
+                            width: `${Math.min(100, producto.porcentajeUrgencia || 0)}%`,
+                            height: '100%',
+                            background: (producto.porcentajeUrgencia || 0) > 75 ? '#e25f4f' : (producto.porcentajeUrgencia || 0) > 50 ? '#f2b84b' : '#4bb27f'
+                          }}
+                        />
                       </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+                      <span style={{ fontSize: '0.75rem', color: '#4d6d6b', fontWeight: 700 }}>
+                        {Math.round(producto.porcentajeUrgencia || 0)}%
+                      </span>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
-      {/* Reporte de Ventas por Mes */}
-      <div className="bg-white rounded-lg shadow-md p-8 mt-8">
-        <div className="flex items-center gap-4 mb-6">
-          <TrendingUp size={28} className="text-green-600" />
-          <h2 className="text-2xl font-bold text-gray-900">Ventas por Mes - {new Date().getFullYear()}</h2>
+      <section className="table-card" style={{ marginTop: '1rem' }}>
+        <div className="table-panel">
+          <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#1f4c45' }}>
+            Ventas por mes - {new Date().getFullYear()}
+          </h2>
+          <p style={{ color: '#607e85', margin: 0, fontSize: '0.86rem' }}>
+            Datos actualizados al momento
+          </p>
         </div>
 
-        {loadingVentas && (!dataVentas || dataVentas.ventasPorMes.length === 0) ? (
-          <div className="flex justify-center py-8">
-            <p className="text-gray-500">Cargando reporte de ventas...</p>
-          </div>
-        ) : !dataVentas || dataVentas.ventasPorMes.length === 0 ? (
-          <div className="text-center py-8">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-              <p className="text-blue-600">ℹ No hay ventas registradas en el período seleccionado</p>
-            </div>
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-100 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Mes</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Año</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Total de Transacciones</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Cantidad Vendida</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Artículos Diferentes</th>
-                  <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Promedio por Venta</th>
+        <div className="table-wrapper">
+          <table className="dashboard-table">
+            <thead>
+              <tr>
+                <th>Mes</th>
+                <th>Año</th>
+                <th>Total Transacciones</th>
+                <th>Cantidad Vendida</th>
+                <th>Artículos</th>
+                <th>Promedio</th>
+              </tr>
+            </thead>
+            <tbody>
+              {dataVentas?.ventasPorMes.map((venta, index) => (
+                <tr key={String(index)}>
+                  <td>{venta.mes}</td>
+                  <td>{venta.ano}</td>
+                  <td>
+                    <span className="badge badge-green">{venta.totalVentas}</span>
+                  </td>
+                  <td>{venta.cantidadVendida}</td>
+                  <td>{venta.cantidadArticulos}</td>
+                  <td>{venta.promedioVenta.toFixed(2)}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {dataVentas.ventasPorMes.map((venta, index) => (
-                  <tr key={index} className="border-b border-gray-200 hover:bg-gray-50">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {venta.mes}
-                    </td>
-                    <td className="px-6 py-4 text-center text-sm text-gray-600">
-                      {venta.ano}
-                    </td>
-                    <td className="px-6 py-4 text-center text-sm font-semibold text-gray-900">
-                      <span className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full">
-                        {venta.totalVentas}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center text-sm font-semibold text-gray-900">
-                      <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full">
-                        {venta.cantidadVendida} unidades
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-center text-sm text-gray-600">
-                      {venta.cantidadArticulos}
-                    </td>
-                    <td className="px-6 py-4 text-center text-sm font-semibold text-gray-900">
-                      {venta.promedioVenta.toFixed(2)} unidades
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
     </div>
+  </div>
   );
 }

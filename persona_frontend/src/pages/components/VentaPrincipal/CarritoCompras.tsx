@@ -56,12 +56,12 @@ const CarritoCompras = ({
                       <Plus size={14} />
                     </button>
                     <span className="carrito-item-precio-unitario">
-                      x Q{item.precio.toFixed(2)}
+                      x Bs. {item.precio.toFixed(2)}
                     </span>
                   </div>
                 </div>
                 <div className="carrito-item-acciones">
-                  <p className="carrito-item-total">Q{(item.precio * item.cantidad).toFixed(2)}</p>
+                  <p className="carrito-item-total">Bs. {(item.precio * item.cantidad).toFixed(2)}</p>
                   <button
                     onClick={() => onEliminarProducto(item.id)}
                     className="carrito-item-eliminar"
@@ -76,7 +76,7 @@ const CarritoCompras = ({
           <div className="carrito-footer">
             <div className="carrito-total">
               <span className="carrito-total-label">Total:</span>
-              <span className="carrito-total-valor">Q{total.toFixed(2)}</span>
+              <span className="carrito-total-valor">Bs. {total.toFixed(2)}</span>
             </div>
             
             <textarea

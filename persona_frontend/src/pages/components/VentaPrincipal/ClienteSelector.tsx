@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { UserPlus, X, Users } from 'lucide-react';
+import { UserPlus, X } from 'lucide-react';
 import ModalCliente from './ModalCliente';
 
 interface Cliente {

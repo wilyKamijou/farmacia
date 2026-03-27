@@ -22,6 +22,7 @@ interface Producto {
   id: string;
   nombrePr: string;
   nombreTc: string;
+  precio: string;
   categoria: {
     nombreCt: string;
   };
@@ -53,6 +54,7 @@ const GET_PRODUCTOS = gql`
       id
       nombrePr
       nombreTc
+      precio
       categoria {
         nombreCt
       }
@@ -100,7 +102,7 @@ export const VentasPage = () => {
       setCarrito([...carrito, {
         id: Date.now(),
         productoId: producto.id,
-        productoNombre: producto.nombre_pr,
+        productoNombre: producto.nombrePr,
         almacenId: almacen.id,
         cantidad,
         precio,

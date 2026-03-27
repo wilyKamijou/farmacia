@@ -1,10 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client';
-import { Package, Warehouse, Tag, Layers } from 'lucide-react';
 import ProductoSelector from '../components/Inventario/ProductoSelector';
 import CategoriaSelector from '../components/Inventario/CategoriaSelector';
-import AlmacenSelector from '../components/Inventario/AlmacenSelector';
 import CarritoProductos from '../components/Inventario/CarritoProductos';
 import TablaInventario from '../components/Inventario/TablaInventario';
 import ModalProducto from '../components/Inventario/ModalProducto';
@@ -286,7 +284,6 @@ export const Inventario = () => {
   const [selectedCategoria, setSelectedCategoria] = useState<Categoria | null>(null);
   const [productosSeleccionados, setProductosSeleccionados] = useState<ProductoSeleccionado[]>([]);
   const [showModal, setShowModal] = useState<'producto' | 'categoria' | 'almacen' | null>(null);
-  let nextId = 1;
 
   // Queries
   const { data: categoriasData, refetch: refetchCategorias } = useQuery<CategoriasData>(GET_CATEGORIAS);
@@ -310,12 +307,8 @@ const [createProducto] = useMutation<CrearProductoResponse>(CREATE_PRODUCTO);
   };
 
   // Convierte ProductoCompleto a Producto
-const productosSimplificados: Producto[] = productosData?.allProductos?.map(p => ({
-  id: p.id,
-  nombrePr: p.nombrePr,
-  nombreTc: p.nombreTc,
-  categoria: p.categoria
-})) || [];
+// Se elimina la variable no utilizada productosSimplificados para evitar warning TS6192.
+
 
   // Guardar categoría
   const handleSaveCategoria = async (data: any) => {
