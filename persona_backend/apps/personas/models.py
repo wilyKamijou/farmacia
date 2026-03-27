@@ -96,6 +96,7 @@ class Producto(models.Model):
     """Modelo para gestionar productos"""
     nombre_pr = models.CharField(max_length=100)
     nombre_tc = models.CharField(max_length=100)
+    precio = models.FloatField()
     fecha_fab = models.DateField()
     fecha_venc = models.DateField()
     descripcion_pr = models.TextField(blank=True, null=True)

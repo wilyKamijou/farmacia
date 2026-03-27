@@ -33,7 +33,7 @@ class CategoriaAdmin(admin.ModelAdmin):
 
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
-    list_display = ('id', 'nombre_pr', 'nombre_tc', 'categoria', 'fecha_fab', 'fecha_venc')
+    list_display = ('id', 'nombre_pr', 'nombre_tc','precio', 'categoria', 'fecha_fab', 'fecha_venc')
     search_fields = ('nombre_pr', 'nombre_tc')
     list_filter = ('categoria',)
 

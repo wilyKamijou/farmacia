@@ -4,7 +4,6 @@ import { gql } from '@apollo/client';
 import { Search, Package } from 'lucide-react';
 import ModalProducto from './ModalProducto';
 
-// ==================== TIPOS ====================
 interface Producto {
   id: string;
   nombrePr: string;
@@ -19,7 +18,6 @@ interface ProductoSelectorProps {
   onAgregarProducto: (producto: any, almacen: any, cantidad: number, precio: number) => void;
 }
 
-// ✅ Tipado para la respuesta del stock
 interface StockResponse {
   productosAlmacenPorProducto: {
     id: string;
@@ -31,27 +29,24 @@ interface StockResponse {
   }[];
 }
 
-// ==================== QUERY ====================
 const GET_STOCK_PRODUCTO = gql`
   query GetStock($productoId: ID!) {
     productosAlmacenPorProducto(productoId: $productoId) {
       id
       almacen {
         id
-        nombre_am
+        nombreAm
       }
       stock
     }
   }
 `;
 
-// ==================== COMPONENTE ====================
 const ProductoSelector = ({ productos, onAgregarProducto }: ProductoSelectorProps) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
   const [selectedProducto, setSelectedProducto] = useState<any>(null);
   
-  // ✅ Query tipada
   const { data: stockData, refetch: refetchStock } = useQuery<StockResponse>(GET_STOCK_PRODUCTO, {
     variables: { productoId: selectedProducto?.id || '' },
     skip: !selectedProducto
@@ -62,29 +57,37 @@ const ProductoSelector = ({ productos, onAgregarProducto }: ProductoSelectorProp
     producto.nombreTc.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleSelectProducto = (producto: Producto) => {
+  const handleSelectProducto = async (producto: Producto) => {
+    console.log('🖱️ Seleccionando producto:', producto.nombrePr);
     setSelectedProducto(producto);
-    refetchStock({ productoId: producto.id });
-    setShowModal(true);
+    
+    // Esperar los datos de stock
+    const { data } = await refetchStock({ productoId: producto.id });
+    console.log('📦 Datos de stock:', data);
+    
+    // Abrir modal solo si hay datos de stock
+    if (data?.productosAlmacenPorProducto && data.productosAlmacenPorProducto.length > 0) {
+      setShowModal(true);
+    } else {
+      alert('Este producto no tiene stock disponible en ningún almacén');
+    }
   };
 
   return (
     <div className="bg-white shadow rounded-lg p-6">
       <h2 className="text-lg font-semibold mb-4">Agregar Productos</h2>
       
-      {/* Buscador */}
       <div className="relative mb-4">
         <Search className="absolute left-3 top-2.5 text-gray-400" size={20} />
         <input
           type="text"
-          placeholder="Buscar producto por nombre o nombre comercial..."
+          placeholder="Buscar producto..."
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="w-full pl-10 pr-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
       
-      {/* Lista de productos */}
       <div className="max-h-64 overflow-y-auto space-y-2">
         {filteredProductos.length === 0 ? (
           <p className="text-center text-gray-500 py-4">No se encontraron productos</p>
@@ -108,17 +111,19 @@ const ProductoSelector = ({ productos, onAgregarProducto }: ProductoSelectorProp
         )}
       </div>
 
-      {/* Modal para seleccionar cantidad y almacén */}
-      <ModalProducto
-        isOpen={showModal}
-        producto={selectedProducto}
-        stockInfo={stockData?.productosAlmacenPorProducto || []}
-        onClose={() => {
-          setShowModal(false);
-          setSelectedProducto(null);
-        }}
-        onAgregar={onAgregarProducto}
-      />
+      {/* Modal - se abrirá solo cuando los datos de stock estén listos */}
+      {showModal && (
+        <ModalProducto
+          isOpen={showModal}
+          producto={selectedProducto}
+          stockInfo={stockData?.productosAlmacenPorProducto || []}
+          onClose={() => {
+            setShowModal(false);
+            setSelectedProducto(null);
+          }}
+          onAgregar={onAgregarProducto}
+        />
+      )}
     </div>
   );
 };
