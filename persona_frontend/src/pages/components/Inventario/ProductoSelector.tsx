@@ -18,16 +18,6 @@ interface Almacen {
   descripcionAm?: string;
 }
 
-interface ProductoSeleccionado {
-  id: string;
-  productoId: string;
-  nombrePr: string;
-  nombreTc: string;
-  almacenId: string;
-  almacenNombre: string;
-  cantidad: number;
-}
-
 interface ProductoSelectorProps {
   productos: Producto[];
   almacenes: Almacen[];
@@ -41,7 +31,6 @@ interface ProductoSelectorProps {
 const ProductoSelector = ({
   productos,
   almacenes,
-  categorias,
   selectedCategoria,
   onAgregarProducto,
   onNuevoProducto,
