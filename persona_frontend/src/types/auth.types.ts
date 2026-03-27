@@ -613,3 +613,54 @@ export interface DeleteDetalleVentaResponse {
 export interface DeleteDetalleVentaVariables {
   id: string;
 }
+
+// ==================== TIPOS PARA REPORTES ====================
+export interface AlmacenStockReporte {
+  almacenNombre: string;
+  stock: number;
+}
+
+export interface ProductoProximoVencer {
+  id: string;
+  nombre_comercial: string;
+  nombre_tecnico: string;
+  fecha_vencimiento: string;
+  dias_faltantes: number;
+  stock_total: number;
+  porcentaje_urgencia: number;
+}
+
+export interface ResumenInventario {
+  totalProductos: number;
+  totalCategorias: number;
+  totalAlmacenes: number;
+  stockTotal: number;
+}
+
+export interface TotalesUsuarios {
+  totalClientes: number;
+  totalProductos: number;
+  empleadosActivos: number;
+}
+
+export interface ReporteCompleto {
+  usuarios: TotalesUsuarios;
+  inventario: ResumenInventario;
+  productosProximosVencer: ProductoProximoVencer[];
+}
+
+export interface GetReporteCompletoResponse {
+  reporteCompleto: ReporteCompleto;
+}
+
+export interface GetTotalesUsuariosResponse {
+  totalesUsuarios: {
+    total_clientes: number;
+    total_empleados: number;
+    empleados_activos: number;
+  };
+}
+
+export interface GetProductosProximoVencimientoResponse {
+  productosProximoVencimiento: ProductoProximoVencer[];
+}
