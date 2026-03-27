@@ -1,6 +1,6 @@
-import { Plus, Edit2, Trash2, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, Package, Calendar, Tag, AlertCircle, FlaskConical, FileText, Layers } from 'lucide-react';
 import { useState } from 'react';
-import { useQuery, useMutation } from '@apollo/client/react'; //   Cambiado a '@apollo/client'
+import { useQuery, useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 import {
   Producto,
@@ -15,7 +15,7 @@ import {
   DeleteProductoVariables
 } from '../types/auth.types';
 
-//   CORREGIDO: Usar camelCase
+// GraphQL queries
 const GET_ALL_PRODUCTOS = gql`
   query GetAllProductos {
     allProductos {
@@ -35,7 +35,6 @@ const GET_ALL_PRODUCTOS = gql`
   }
 `;
 
-//   CORREGIDO: Usar camelCase para categorías también
 const GET_ALL_CATEGORIAS = gql`
   query GetAllCategorias {
     allCategorias {
@@ -143,14 +142,14 @@ export function ProductoPage() {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
-    nombrePr: '',        //   Cambiado de nombre_pr
-    nombreTc: '',        //   Cambiado de nombre_tc
-    fechaFab: '',        //   Cambiado de fecha_fab
-    fechaVenc: '',       //   Cambiado de fecha_venc
-    categoriaId: '',     //   Cambiado de categoria_id
-    descripcionPr: '',   //   Cambiado de descripcion_pr
-    concentracionQm: '', //   Cambiado de concentracion_qm
-    composicionQm: ''    //   Cambiado de composicion_qm
+    nombrePr: '',
+    nombreTc: '',
+    fechaFab: '',
+    fechaVenc: '',
+    categoriaId: '',
+    descripcionPr: '',
+    concentracionQm: '',
+    composicionQm: ''
   });
 
   const { loading: loadingProductos, data: dataProductos, refetch } = useQuery<GetAllProductosResponse>(GET_ALL_PRODUCTOS);
@@ -159,14 +158,24 @@ export function ProductoPage() {
   const [updateProducto] = useMutation<UpdateProductoResponse, UpdateProductoVariables>(UPDATE_PRODUCTO);
   const [deleteProducto] = useMutation<DeleteProductoResponse, DeleteProductoVariables>(DELETE_PRODUCTO);
 
-  //   Corregido: usar allProductos y allCategorias
   const productos = dataProductos?.allProductos || [];
   const categorias: Categoria[] = dataCategorias?.allCategorias || [];
   
   const filteredProductos = productos.filter((p: Producto) =>
     p.nombrePr.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.nombreTc.toLowerCase().includes(searchTerm.toLowerCase())
+    p.nombreTc.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.categoria.nombreCt.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Estadísticas
+  const total = productos.length;
+  const proximosVencer = productos.filter(p => {
+    const fechaVenc = new Date(p.fechaVenc);
+    const hoy = new Date();
+    const diffDays = Math.ceil((fechaVenc.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+    return diffDays <= 30 && diffDays > 0;
+  }).length;
+  const vencidos = productos.filter(p => new Date(p.fechaVenc) < new Date()).length;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -247,28 +256,35 @@ export function ProductoPage() {
     }
   };
 
-  return (
-    <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Productos</h1>
-        <p className="text-gray-600">Gestiona todos los productos de la farmacia</p>
-      </div>
+  const getVencimientoStatus = (fechaVenc: string) => {
+    const hoy = new Date();
+    const venc = new Date(fechaVenc);
+    const diffDays = Math.ceil((venc.getTime() - hoy.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays < 0) return { text: 'Vencido', className: 'badge-red' };
+    if (diffDays <= 30) return { text: 'Próximo a vencer', className: 'badge-yellow' };
+    return { text: 'Vigente', className: 'badge-green' };
+  };
 
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-        <div className="flex justify-between items-center gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-3 text-gray-400" size={20} />
-            <input
-              type="text"
-              placeholder="Buscar por nombre..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
+  return (
+    <div className="dashboard-main-inner">
+      {/* Header */}
+      <div className="dashboard-header">
+        <div>
+          <h1 className="dashboard-title">Productos</h1>
+          <p className="dashboard-subtitle">Gestiona todos los productos de la farmacia</p>
+        </div>
+        <div className="dashboard-topbar-controls">
+          <input
+            type="text"
+            placeholder="Buscar por nombre, categoría..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="dashboard-search"
+          />
           <button
             onClick={() => handleOpenModal()}
-            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg transition-colors font-medium"
+            className="flex items-center gap-2 bg-[#0f5f37] hover:bg-[#0e3d25] text-white px-4 py-2 rounded-full transition-colors font-medium shadow-md"
           >
             <Plus size={20} />
             Agregar Producto
@@ -276,196 +292,316 @@ export function ProductoPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md overflow-hidden">
-        <table className="w-full">
-          <thead className="bg-gray-100 border-b border-gray-200">
-            <tr>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Nombre Comercial</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Nombre Técnico</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Categoría</th>
-              <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">Vencimiento</th>
-              <th className="px-6 py-4 text-center text-sm font-semibold text-gray-700">Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
-            {loadingProductos ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                  Cargando...
-                </td>
-              </tr>
-            ) : filteredProductos.length === 0 ? (
-              <tr>
-                <td colSpan={5} className="px-6 py-8 text-center text-gray-500">
-                  No hay productos registrados aún
-                </td>
-              </tr>
-            ) : (
-              filteredProductos.map((producto: Producto) => (
-                <tr key={producto.id} className="border-b border-gray-200 hover:bg-gray-50">
-                  <td className="px-6 py-4 text-sm text-gray-900">{producto.nombrePr}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{producto.nombreTc}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{producto.categoria.nombreCt}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {new Date(producto.fechaVenc).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <div className="flex justify-center gap-2">
-                      <button
-                        onClick={() => handleOpenModal(producto)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        title="Editar"
-                      >
-                        <Edit2 size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(producto.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        title="Eliminar"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+      {/* Stats Cards */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <h3>Total Productos</h3>
+          <div className="number">{total}</div>
+          <div className="icon-box">
+            <Package size={24} />
+          </div>
+        </div>
+        <div className="stat-card">
+          <h3>Próximos a Vencer</h3>
+          <div className="number text-yellow-600">{proximosVencer}</div>
+          <div className="icon-box">
+            <AlertCircle size={24} />
+          </div>
+        </div>
+        <div className="stat-card">
+          <h3>Vencidos</h3>
+          <div className="number text-red-600">{vencidos}</div>
+          <div className="icon-box">
+            <AlertCircle size={24} />
+          </div>
+        </div>
       </div>
 
+      {/* Grid de Tarjetas */}
+      {loadingProductos ? (
+        <div className="text-center py-12 text-gray-500">Cargando productos...</div>
+      ) : filteredProductos.length === 0 ? (
+        <div className="text-center py-12 text-gray-500">No hay productos registrados aún</div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredProductos.map((producto: Producto) => {
+            const status = getVencimientoStatus(producto.fechaVenc);
+            return (
+              <div key={producto.id} className="stat-card hover:shadow-lg transition-shadow">
+                <div className="flex justify-between items-start mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-lg">
+                      <Package size={24} />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-bold text-gray-800">
+                        {producto.nombrePr}
+                      </h3>
+                      <span className={`badge ${status.className} mt-1`}>
+                        {status.text}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleOpenModal(producto)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                      title="Editar"
+                    >
+                      <Edit2 size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(producto.id)}
+                      className="p-2 text-red-600 hover:bg-red-50 rounded-full transition-colors"
+                      title="Eliminar"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="space-y-2 mt-3 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <Tag size={16} className="text-gray-400" />
+                    <span className="font-medium">Nombre Técnico:</span>
+                    <span>{producto.nombreTc}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Layers size={16} className="text-gray-400" />
+                    <span className="font-medium">Categoría:</span>
+                    <span className="text-indigo-600 font-medium">{producto.categoria.nombreCt}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Calendar size={16} className="text-gray-400" />
+                    <span className="font-medium">Fabricación:</span>
+                    <span>{new Date(producto.fechaFab).toLocaleDateString()}</span>
+                  </div>
+                  
+                  <div className="flex items-center gap-2">
+                    <Calendar size={16} className="text-gray-400" />
+                    <span className="font-medium">Vencimiento:</span>
+                    <span className={status.text === 'Vencido' ? 'text-red-600 font-semibold' : ''}>
+                      {new Date(producto.fechaVenc).toLocaleDateString()}
+                    </span>
+                  </div>
+                  
+                  {producto.concentracionQm && (
+                    <div className="flex items-center gap-2">
+                      <FlaskConical size={16} className="text-gray-400" />
+                      <span className="font-medium">Concentración:</span>
+                      <span>{producto.concentracionQm}</span>
+                    </div>
+                  )}
+                  
+                  {producto.descripcionPr && (
+                    <div className="flex items-start gap-2 mt-2">
+                      <FileText size={16} className="text-gray-400 mt-0.5" />
+                      <span className="font-medium">Descripción:</span>
+                      <span className="text-xs line-clamp-2">{producto.descripcionPr}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Modal Mejorado */}
       {showModal && (
-        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50 flex justify-center items-center">
-          <div className="bg-white p-6 border rounded-lg shadow-lg w-96 max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">
-              {editingId ? 'Editar Producto' : 'Crear Nuevo Producto'}
-            </h3>
-            <form onSubmit={handleSubmit}>
-              <div className="space-y-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre Comercial *
-                  </label>
-                  <input
-                    type="text"
-                    name="nombrePr"
-                    placeholder="Nombre Comercial"
-                    value={formData.nombrePr}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            {/* Header */}
+            <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">
+                  {editingId ? '✏️ Editar Producto' : '📦 Crear Nuevo Producto'}
+                </h3>
+                <p className="text-sm text-gray-500 mt-1">
+                  {editingId ? 'Modifica los datos del producto' : 'Ingresa los datos del nuevo producto'}
+                </p>
+              </div>
+              <button
+                onClick={() => setShowModal(false)}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Formulario */}
+            <form onSubmit={handleSubmit} className="p-6">
+              <div className="space-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Nombre Comercial <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Package size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        name="nombrePr"
+                        placeholder="Ej. Aspirina"
+                        value={formData.nombrePr}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 bg-gray-50 hover:bg-white transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Nombre Técnico <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <FlaskConical size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        name="nombreTc"
+                        placeholder="Ej. Ácido acetilsalicílico"
+                        value={formData.nombreTc}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 bg-gray-50 hover:bg-white transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Nombre Técnico *
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Categoría <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    name="nombreTc"
-                    placeholder="Nombre Técnico"
-                    value={formData.nombreTc}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Categoría *
-                  </label>
-                  <select
-                    name="categoriaId"
-                    value={formData.categoriaId}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                    disabled={loadingCategorias}
-                  >
-                    <option value="">Seleccionar categoría</option>
-                    {categorias.map(cat => (
-                      <option key={cat.id} value={cat.id}>
-                        {cat.nombreCt}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <Layers size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                    <select
+                      name="categoriaId"
+                      value={formData.categoriaId}
+                      onChange={handleInputChange}
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 bg-gray-50 hover:bg-white transition-all cursor-pointer"
+                      required
+                      disabled={loadingCategorias}
+                    >
+                      <option value="">Seleccionar categoría</option>
+                      {categorias.map(cat => (
+                        <option key={cat.id} value={cat.id}>
+                          {cat.nombreCt}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   {loadingCategorias && (
                     <p className="text-xs text-gray-500 mt-1">Cargando categorías...</p>
                   )}
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Fecha Fabricación *
-                  </label>
-                  <input
-                    type="date"
-                    name="fechaFab"
-                    value={formData.fechaFab}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Fecha Fabricación <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <Calendar size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="date"
+                        name="fechaFab"
+                        value={formData.fechaFab}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 bg-gray-50 hover:bg-white transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Fecha Vencimiento <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <AlertCircle size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="date"
+                        name="fechaVenc"
+                        value={formData.fechaVenc}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 bg-gray-50 hover:bg-white transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Fecha Vencimiento *
-                  </label>
-                  <input
-                    type="date"
-                    name="fechaVenc"
-                    value={formData.fechaVenc}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    required
-                  />
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Concentración
+                    </label>
+                    <div className="relative">
+                      <FlaskConical size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        name="concentracionQm"
+                        placeholder="Ej: 500mg"
+                        value={formData.concentracionQm}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 bg-gray-50 hover:bg-white transition-all"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Composición Química
+                    </label>
+                    <div className="relative">
+                      <FlaskConical size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                      <input
+                        type="text"
+                        name="composicionQm"
+                        placeholder="Composición química"
+                        value={formData.composicionQm}
+                        onChange={handleInputChange}
+                        className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 bg-gray-50 hover:bg-white transition-all"
+                      />
+                    </div>
+                  </div>
                 </div>
-                
+
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Concentración
-                  </label>
-                  <input
-                    type="text"
-                    name="concentracionQm"
-                    placeholder="Ej: 500mg"
-                    value={formData.concentracionQm}
-                    onChange={handleInputChange}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Descripción
                   </label>
-                  <textarea
-                    name="descripcionPr"
-                    placeholder="Descripción del producto"
-                    value={formData.descripcionPr}
-                    onChange={handleInputChange}
-                    rows={3}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  />
+                  <div className="relative">
+                    <FileText size={18} className="absolute left-3 top-3 text-gray-400" />
+                    <textarea
+                      name="descripcionPr"
+                      placeholder="Descripción detallada del producto"
+                      value={formData.descripcionPr}
+                      onChange={handleInputChange}
+                      rows={3}
+                      className="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 bg-gray-50 hover:bg-white transition-all resize-none"
+                    />
+                  </div>
                 </div>
               </div>
-              
-              <div className="mt-4 flex justify-end space-x-2">
+
+              {/* Botones */}
+              <div className="mt-6 flex justify-end gap-3">
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                  className="px-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-xl transition-colors font-medium"
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                  className="px-5 py-2.5 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-xl transition-all font-medium shadow-md hover:shadow-lg"
                 >
-                  {editingId ? 'Actualizar' : 'Crear'}
+                  {editingId ? 'Actualizar Producto' : 'Crear Producto'}
                 </button>
               </div>
             </form>
