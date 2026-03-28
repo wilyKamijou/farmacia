@@ -15,6 +15,7 @@ interface Producto {
   descripcion_pr?: string;
   concentracion_qm?: string;
   composicion_qm?: string;
+  precio?: number;  // 👈 AGREGAR precio al tipo Producto
   categoria?: { id: string };
 }
 
@@ -35,7 +36,8 @@ const ModalProducto = ({ isOpen, producto, categorias, onClose, onSave }: ModalP
     categoriaId: '',
     descripcionPr: '',
     concentracionQm: '',
-    composicionQm: ''
+    composicionQm: '',
+    precio: ''  // 👈 AGREGAR campo precio al estado
   });
 
   useEffect(() => {
@@ -48,7 +50,8 @@ const ModalProducto = ({ isOpen, producto, categorias, onClose, onSave }: ModalP
         categoriaId: producto.categoria?.id || '',
         descripcionPr: producto.descripcion_pr || '',
         concentracionQm: producto.concentracion_qm || '',
-        composicionQm: producto.composicion_qm || ''
+        composicionQm: producto.composicion_qm || '',
+        precio: producto.precio?.toString() || ''  // 👈 Cargar precio si existe
       });
     } else {
       setFormData({
@@ -59,14 +62,19 @@ const ModalProducto = ({ isOpen, producto, categorias, onClose, onSave }: ModalP
         categoriaId: '',
         descripcionPr: '',
         concentracionQm: '',
-        composicionQm: ''
+        composicionQm: '',
+        precio: ''  // 👈 Resetear precio
       });
     }
   }, [producto]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onSave(formData);
+    // Convertir precio a número antes de enviar
+    onSave({
+      ...formData,
+      precio: parseFloat(formData.precio) || 0
+    });
   };
 
   return (
@@ -91,6 +99,20 @@ const ModalProducto = ({ isOpen, producto, categorias, onClose, onSave }: ModalP
               required
             />
           </div>
+        </div>
+
+        {/* 👈 NUEVO CAMPO DE PRECIO */}
+        <div className="form-group">
+          <label>Precio de Venta *</label>
+          <input
+            type="number"
+            value={formData.precio}
+            onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
+            placeholder="Ej: 12.50"
+            step="0.01"
+            min="0"
+            required
+          />
         </div>
 
         <div className="form-row">

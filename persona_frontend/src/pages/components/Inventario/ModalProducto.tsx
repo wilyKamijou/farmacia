@@ -22,13 +22,22 @@ const ModalProducto = ({ isOpen, onClose, categorias, onSave }: ModalProductoPro
     categoriaId: '',
     descripcionPr: '',
     concentracionQm: '',
-    composicionQm: ''
+    composicionQm: '',
+    precio: ''
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onSave(formData);
-  };
+ const handleSubmit = (e: React.FormEvent) => {
+  e.preventDefault();
+  const precioNumerico = parseFloat(formData.precio);
+  
+  console.log('Precio a enviar:', precioNumerico);
+  console.log('Tipo de precio:', typeof precioNumerico);
+  
+  onSave({
+    ...formData,
+    precio: isNaN(precioNumerico) ? 0 : precioNumerico  // Asegurar que sea número
+  });
+};
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Nuevo Producto">
@@ -52,6 +61,19 @@ const ModalProducto = ({ isOpen, onClose, categorias, onSave }: ModalProductoPro
               required
             />
           </div>
+        </div>
+
+        <div className="form-group">
+          <label>Precio de Venta *</label>
+          <input
+            type="number"
+            value={formData.precio}
+            onChange={(e) => setFormData({ ...formData, precio: e.target.value })}
+            placeholder="Ej: 12.50"
+            step="0.01"
+            min="0"
+            required
+          />
         </div>
 
         <div className="form-row">

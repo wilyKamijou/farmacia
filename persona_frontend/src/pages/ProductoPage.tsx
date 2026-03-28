@@ -49,7 +49,7 @@ const GET_ALL_CATEGORIAS = gql`
 `;
 
 const CREATE_PRODUCTO = gql`
-  mutation CrearProducto(
+  mutation crearProducto(
     $nombrePr: String!
     $nombreTc: String!
     $fechaFab: Date!
@@ -147,6 +147,8 @@ const DELETE_PRODUCTO = gql`
   }
 `;
 
+// ... imports existentes ...
+
 export function ProductoPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -157,6 +159,7 @@ export function ProductoPage() {
     fechaFab: '',
     fechaVenc: '',
     categoriaId: '',
+    precio: 0,  // ✅ Agregar precio al estado inicial
     descripcionPr: '',
     concentracionQm: '',
     composicionQm: ''
@@ -188,8 +191,15 @@ export function ProductoPage() {
   const vencidos = productos.filter(p => new Date(p.fechaVenc) < new Date()).length;
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const value = e.target.name === 'precio' ? parseFloat(e.target.value) || 0 : e.target.value;
-    setFormData({ ...formData, [e.target.name]: value });
+    const { name, value } = e.target;
+    let processedValue: any = value;
+    
+    // Procesar precio como número
+    if (name === 'precio') {
+      processedValue = value === '' ? 0 : parseFloat(value);
+    }
+    
+    setFormData({ ...formData, [name]: processedValue });
   };
 
   const handleOpenModal = (producto?: Producto) => {
@@ -201,10 +211,10 @@ export function ProductoPage() {
         fechaFab: producto.fechaFab,
         fechaVenc: producto.fechaVenc,
         categoriaId: producto.categoria.id,
+        precio: producto.precio || '0',  // ✅ Agregar precio al editar
         descripcionPr: producto.descripcionPr || '',
         concentracionQm: producto.concentracionQm || '',
         composicionQm: producto.composicionQm || '',
-        //precio: producto.precio || 0
       });
     } else {
       setEditingId(null);
@@ -214,10 +224,10 @@ export function ProductoPage() {
         fechaFab: '',
         fechaVenc: '',
         categoriaId: '',
+        precio: 0,  // ✅ Precio por defecto
         descripcionPr: '',
         concentracionQm: '',
         composicionQm: '',
-        //precio: 0
       });
     }
     setShowModal(true);
@@ -225,17 +235,29 @@ export function ProductoPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validación básica
+    if (formData.precio <= 0) {
+      alert('El precio debe ser mayor a 0');
+      return;
+    }
+    
     try {
       if (editingId) {
         await updateProducto({ 
           variables: { 
             id: editingId, 
-            ...formData 
+            ...formData,
+            // Asegurar que precio sea número
+            precio: parseFloat(formData.precio.toString())
           } 
         });
       } else {
         await createProducto({ 
-          variables: formData 
+          variables: {
+            ...formData,
+            precio: parseFloat(formData.precio.toString())
+          }
         });
       }
       setShowModal(false);
@@ -245,10 +267,10 @@ export function ProductoPage() {
         fechaFab: '',
         fechaVenc: '',
         categoriaId: '',
+        precio: 0,
         descripcionPr: '',
         concentracionQm: '',
         composicionQm: '',
-        //precio: 0
       });
       setEditingId(null);
       refetch();
@@ -278,6 +300,16 @@ export function ProductoPage() {
     if (diffDays < 0) return { text: 'Vencido', className: 'badge-red' };
     if (diffDays <= 30) return { text: 'Próximo a vencer', className: 'badge-yellow' };
     return { text: 'Vigente', className: 'badge-green' };
+  };
+
+  // Formatear precio
+  const formatPrice = (price: number) => {
+    return new Intl.NumberFormat('es-CO', {
+      style: 'currency',
+      currency: 'COP',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(price);
   };
 
   return (
@@ -389,6 +421,15 @@ export function ProductoPage() {
                     <Layers size={16} className="text-gray-400" />
                     <span className="font-medium">Categoría:</span>
                     <span className="text-indigo-600 font-medium">{producto.categoria.nombreCt}</span>
+                  </div>
+                  
+                  {/* ✅ Mostrar precio */}
+                  <div className="flex items-center gap-2">
+                    <Tag size={16} className="text-green-600" />
+                    <span className="font-medium">Precio:</span>
+                    <span className="text-green-600 font-bold text-base">
+                      {formatPrice(producto.precio ? parseFloat(producto.precio) : 0)}
+                    </span>
                   </div>
                   
                   <div className="flex items-center gap-2">
@@ -516,6 +557,28 @@ export function ProductoPage() {
                   {loadingCategorias && (
                     <p className="text-xs text-gray-500 mt-1">Cargando categorías...</p>
                   )}
+                </div>
+
+                {/* ✅ Campo de Precio */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Precio <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 font-semibold">$</span>
+                    <input
+                      type="number"
+                      name="precio"
+                      placeholder="0.00"
+                      value={formData.precio}
+                      onChange={handleInputChange}
+                      step="0.01"
+                      min="0"
+                      className="w-full pl-8 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:border-green-500 focus:ring-4 focus:ring-green-100 bg-gray-50 hover:bg-white transition-all"
+                      required
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">Ingresa el precio del producto en COP</p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

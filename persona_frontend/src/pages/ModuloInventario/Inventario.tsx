@@ -3,6 +3,7 @@ import { useQuery, useMutation } from '@apollo/client/react';
 import { gql } from '@apollo/client';
 import ProductoSelector from '../components/Inventario/ProductoSelector';
 import CategoriaSelector from '../components/Inventario/CategoriaSelector';
+import AlmacenSelector from '../components/Inventario/AlmacenSelector';
 import CarritoProductos from '../components/Inventario/CarritoProductos';
 import TablaInventario from '../components/Inventario/TablaInventario';
 import ModalProducto from '../components/Inventario/ModalProducto';
@@ -105,12 +106,13 @@ const CREATE_ALMACEN = gql`
 `;
 
 const CREATE_PRODUCTO = gql`
-  mutation CreateProducto(
+  mutation crearProducto(
     $nombrePr: String!
     $nombreTc: String!
     $fechaFab: Date!
     $fechaVenc: Date!
     $categoriaId: ID!
+    $precio: Decimal!
     $descripcionPr: String
     $concentracionQm: String
     $composicionQm: String
@@ -121,6 +123,7 @@ const CREATE_PRODUCTO = gql`
       fechaFab: $fechaFab
       fechaVenc: $fechaVenc
       categoriaId: $categoriaId
+      precio: $precio
       descripcionPr: $descripcionPr
       concentracionQm: $concentracionQm
       composicionQm: $composicionQm
@@ -128,6 +131,7 @@ const CREATE_PRODUCTO = gql`
       producto {
         id
         nombrePr
+        precio
       }
       ok
       mensaje
@@ -335,20 +339,26 @@ const [createProducto] = useMutation<CrearProductoResponse>(CREATE_PRODUCTO);
   };
 
   // Guardar producto
-  const handleSaveProducto = async (data: any) => {
-    try {
-      const { data: result } = await createProducto({ variables: data });
-      if (result?.crearProducto?.ok) {
-        alert('Producto creado');
-        refetchProductos();
-        setShowModal(null);
-      } else {
-        alert(result?.crearProducto?.mensaje || 'Error al crear producto');
-      }
-    } catch (err) {
-      alert('Error al crear producto');
+ const handleSaveProducto = async (data: any) => {
+  console.log('=== DATOS A ENVIAR AL BACKEND ===');
+  console.log(JSON.stringify(data, null, 2));
+  console.log('Tipo de precio:', typeof data.precio);
+  
+  try {
+    const { data: result } = await createProducto({ variables: data });
+    console.log('Respuesta:', result);
+    if (result?.crearProducto?.ok) {
+      alert('Producto creado');
+      refetchProductos();
+      setShowModal(null);
+    } else {
+      alert(result?.crearProducto?.mensaje || 'Error al crear producto');
     }
-  };
+  } catch (err) {
+    console.error('Error detallado:', err);
+    alert('Error al crear producto');
+  }
+};  
 
   // Elimina la variable nextId y usa esto en su lugar:
 

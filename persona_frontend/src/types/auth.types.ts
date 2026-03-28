@@ -334,6 +334,7 @@ export interface Producto {
   descripcionPr?: string;
   concentracionQm?: string;
   composicionQm?: string;
+  precio: number;  // ✅ Agregar precio
   categoria: Categoria;
 }
 
@@ -349,13 +350,13 @@ export interface CreateProductoResponse {
   };
 }
 
-// ✅ CORREGIDO: Usar categoriaId en lugar de categoria_id
 export interface CreateProductoVariables {
   nombrePr: string;
   nombreTc: string;
   fechaFab: string;
   fechaVenc: string;
-  categoriaId: string;  // ← Cambiado de categoria_id
+  categoriaId: string;
+  precio: number;  // ✅ Agregar precio como obligatorio
   descripcionPr?: string;
   concentracionQm?: string;
   composicionQm?: string;
@@ -369,14 +370,14 @@ export interface UpdateProductoResponse {
   };
 }
 
-// ✅ CORREGIDO: Usar categoriaId en lugar de categoria_id
 export interface UpdateProductoVariables {
   id: string;
   nombrePr?: string;
   nombreTc?: string;
   fechaFab?: string;
   fechaVenc?: string;
-  categoriaId?: string;  // ← Cambiado de categoria_id
+  categoriaId?: string;
+  precio?: number;  // ✅ Agregar precio como opcional
   descripcionPr?: string;
   concentracionQm?: string;
   composicionQm?: string;

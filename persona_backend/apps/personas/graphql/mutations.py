@@ -544,15 +544,32 @@ class CrearProducto(graphene.Mutation):
         concentracion_qm = graphene.String()
         composicion_qm = graphene.String()
         categoria_id = graphene.ID(required=True)
-    
+        precio = graphene.Decimal(required=True)
+
     producto = graphene.Field(ProductoType)
     ok = graphene.Boolean()
     mensaje = graphene.String()
-    
+
     def mutate(self, info, nombre_pr, nombre_tc, fecha_fab, fecha_venc,
-               categoria_id, descripcion_pr=None, concentracion_qm=None, composicion_qm=None):
+               categoria_id, precio, descripcion_pr=None, concentracion_qm=None, composicion_qm=None):
         try:
+            # 👈 LOGS PARA DEPURACIÓN
+            print("=== DATOS RECIBIDOS EN BACKEND ===")
+            print(f"nombre_pr: {nombre_pr}")
+            print(f"nombre_tc: {nombre_tc}")
+            print(f"fecha_fab: {fecha_fab}")
+            print(f"fecha_venc: {fecha_venc}")
+            print(f"categoria_id: {categoria_id}")
+            print(f"precio: {precio} (tipo: {type(precio)})")
+            print(f"descripcion_pr: {descripcion_pr}")
+            print(f"concentracion_qm: {concentracion_qm}")
+            print(f"composicion_qm: {composicion_qm}")
+            
             categoria = Categoria.objects.get(pk=categoria_id)
+            
+            # 👈 VERIFICAR EL PRECIO ANTES DE CREAR
+            print(f"Precio antes de crear producto: {precio}")
+            
             producto = Producto(
                 nombre_pr=nombre_pr,
                 nombre_tc=nombre_tc,
@@ -561,7 +578,8 @@ class CrearProducto(graphene.Mutation):
                 descripcion_pr=descripcion_pr,
                 concentracion_qm=concentracion_qm,
                 composicion_qm=composicion_qm,
-                categoria=categoria
+                categoria=categoria,
+                precio=precio
             )
             producto.save()
             return CrearProducto(
@@ -576,6 +594,10 @@ class CrearProducto(graphene.Mutation):
                 mensaje="Categoría no encontrada"
             )
         except Exception as e:
+            print(f"❌ ERROR EN BACKEND: {e}")
+            print(f"Tipo de error: {type(e)}")
+            import traceback
+            traceback.print_exc()
             return CrearProducto(
                 producto=None,
                 ok=False,
@@ -594,6 +616,7 @@ class ActualizarProducto(graphene.Mutation):
         concentracion_qm = graphene.String()
         composicion_qm = graphene.String()
         categoria_id = graphene.ID()
+        precio = graphene.Decimal()  # 👈 Agregar precio como argumento opcional
     
     producto = graphene.Field(ProductoType)
     ok = graphene.Boolean()
