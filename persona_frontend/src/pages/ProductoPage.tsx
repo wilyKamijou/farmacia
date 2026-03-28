@@ -14,8 +14,6 @@ import {
   DeleteProductoResponse,
   DeleteProductoVariables
 } from '../types/producto.types';
-import ProductoModal from './components/Producto/ProductoModal';
-import ProductoTable from './components/Producto/ProductoTable';
 import './styles/ProductoPage.css';
 
 // GraphQL queries
@@ -147,8 +145,6 @@ const DELETE_PRODUCTO = gql`
   }
 `;
 
-// ... imports existentes ...
-
 export function ProductoPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
@@ -159,7 +155,7 @@ export function ProductoPage() {
     fechaFab: '',
     fechaVenc: '',
     categoriaId: '',
-    precio: 0,  // ✅ Agregar precio al estado inicial
+    precio: 0,
     descripcionPr: '',
     concentracionQm: '',
     composicionQm: ''
@@ -192,14 +188,21 @@ export function ProductoPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    let processedValue: any = value;
     
-    // Procesar precio como número
     if (name === 'precio') {
-      processedValue = value === '' ? 0 : parseFloat(value);
+      // Limpiar el valor: remover cualquier caracter no numérico excepto punto
+      let cleanValue = value.replace(/[^\d.]/g, '');
+      // Asegurar que solo hay un punto decimal
+      const parts = cleanValue.split('.');
+      if (parts.length > 2) {
+        cleanValue = parts[0] + '.' + parts.slice(1).join('');
+      }
+      // Convertir a número o dejar como 0 si está vacío
+      const numValue = cleanValue === '' || cleanValue === '.' ? 0 : parseFloat(cleanValue);
+      setFormData({ ...formData, precio: isNaN(numValue) ? 0 : numValue });
+    } else {
+      setFormData({ ...formData, [name]: value });
     }
-    
-    setFormData({ ...formData, [name]: processedValue });
   };
 
   const handleOpenModal = (producto?: Producto) => {
@@ -211,7 +214,7 @@ export function ProductoPage() {
         fechaFab: producto.fechaFab,
         fechaVenc: producto.fechaVenc,
         categoriaId: producto.categoria.id,
-        precio: producto.precio || '0',  // ✅ Agregar precio al editar
+        precio: producto.precio || 0,
         descripcionPr: producto.descripcionPr || '',
         concentracionQm: producto.concentracionQm || '',
         composicionQm: producto.composicionQm || '',
@@ -224,7 +227,7 @@ export function ProductoPage() {
         fechaFab: '',
         fechaVenc: '',
         categoriaId: '',
-        precio: 0,  // ✅ Precio por defecto
+        precio: 0,
         descripcionPr: '',
         concentracionQm: '',
         composicionQm: '',
@@ -236,55 +239,96 @@ export function ProductoPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validación básica
+    // Validar precio
     if (formData.precio <= 0) {
-      alert('El precio debe ser mayor a 0');
+      alert('El precio debe ser un número mayor a 0');
+      return;
+    }
+
+    // Validar que precio sea un número válido
+    if (isNaN(formData.precio)) {
+      alert('El precio debe ser un número válido');
       return;
     }
     
     try {
       if (editingId) {
-        await updateProducto({ 
-          variables: { 
-            id: editingId, 
-            ...formData,
-            // Asegurar que precio sea número
-            precio: parseFloat(formData.precio.toString())
-          } 
-        });
+        const variables: UpdateProductoVariables = {
+          id: editingId,
+          nombrePr: formData.nombrePr || undefined,
+          nombreTc: formData.nombreTc || undefined,
+          fechaFab: formData.fechaFab || undefined,
+          fechaVenc: formData.fechaVenc || undefined,
+          categoriaId: formData.categoriaId || undefined,
+          precio: formData.precio,
+          descripcionPr: formData.descripcionPr || undefined,
+          concentracionQm: formData.concentracionQm || undefined,
+          composicionQm: formData.composicionQm || undefined,
+        };
+        
+        const result = await updateProducto({ variables });
+        if (result.data?.actualizarProducto?.ok) {
+          alert('Producto actualizado correctamente');
+          setShowModal(false);
+          resetForm();
+          refetch();
+        } else {
+          alert(result.data?.actualizarProducto?.mensaje || 'Error al actualizar producto');
+        }
       } else {
-        await createProducto({ 
-          variables: {
-            ...formData,
-            precio: parseFloat(formData.precio.toString())
-          }
-        });
+        const variables: CreateProductoVariables = {
+          nombrePr: formData.nombrePr,
+          nombreTc: formData.nombreTc,
+          fechaFab: formData.fechaFab,
+          fechaVenc: formData.fechaVenc,
+          categoriaId: formData.categoriaId,
+          precio: formData.precio,
+          descripcionPr: formData.descripcionPr || undefined,
+          concentracionQm: formData.concentracionQm || undefined,
+          composicionQm: formData.composicionQm || undefined,
+        };
+        
+        const result = await createProducto({ variables });
+        if (result.data?.crearProducto?.ok) {
+          alert('Producto creado correctamente');
+          setShowModal(false);
+          resetForm();
+          refetch();
+        } else {
+          alert(result.data?.crearProducto?.mensaje || 'Error al crear producto');
+        }
       }
-      setShowModal(false);
-      setFormData({
-        nombrePr: '',
-        nombreTc: '',
-        fechaFab: '',
-        fechaVenc: '',
-        categoriaId: '',
-        precio: 0,
-        descripcionPr: '',
-        concentracionQm: '',
-        composicionQm: '',
-      });
-      setEditingId(null);
-      refetch();
     } catch (err) {
       console.error('Error:', err);
       alert('Error al guardar producto');
     }
   };
 
+  const resetForm = () => {
+    setFormData({
+      nombrePr: '',
+      nombreTc: '',
+      fechaFab: '',
+      fechaVenc: '',
+      categoriaId: '',
+      precio: 0,
+      descripcionPr: '',
+      concentracionQm: '',
+      composicionQm: '',
+    });
+    setEditingId(null);
+  };
+
   const handleDelete = async (id: string) => {
     if (confirm('¿Estás seguro de eliminar este producto?')) {
       try {
-        await deleteProducto({ variables: { id } });
-        refetch();
+        const result = await deleteProducto({ variables: { id } });
+        if (result.data?.eliminarProducto?.ok) {
+          alert('Producto eliminado correctamente');
+          refetch();
+        } else {
+          alert(result.data?.eliminarProducto?.mensaje || 'Error al eliminar producto');
+        }
       } catch (err) {
         console.error('Error:', err);
         alert('Error al eliminar producto');
@@ -331,15 +375,11 @@ export function ProductoPage() {
           <button
             onClick={() => handleOpenModal()}
             className="flex items-center gap-2 bg-[#0f5f37] hover:bg-[#0e3d25] text-white px-4 py-2 rounded-full transition-colors font-medium shadow-md"
-          >
+           >
             <Plus size={20} />
             Agregar Producto
           </button>
         </div>
-        <button onClick={() => handleOpenModal()} className="btn-add">
-          <Plus size={20} />
-          Agregar Producto
-        </button>
       </div>
 
       {/* Stats Cards */}
@@ -423,12 +463,11 @@ export function ProductoPage() {
                     <span className="text-indigo-600 font-medium">{producto.categoria.nombreCt}</span>
                   </div>
                   
-                  {/* ✅ Mostrar precio */}
                   <div className="flex items-center gap-2">
                     <Tag size={16} className="text-green-600" />
                     <span className="font-medium">Precio:</span>
                     <span className="text-green-600 font-bold text-base">
-                      {formatPrice(producto.precio ? parseFloat(producto.precio) : 0)}
+                      {formatPrice(producto.precio || 0)}
                     </span>
                   </div>
                   
@@ -468,11 +507,10 @@ export function ProductoPage() {
         </div>
       )}
 
-      {/* Modal Mejorado */}
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex justify-center items-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            {/* Header */}
             <div className="sticky top-0 bg-white border-b border-gray-100 px-6 py-4 flex justify-between items-center">
               <div>
                 <h3 className="text-xl font-bold text-gray-900">
@@ -492,7 +530,6 @@ export function ProductoPage() {
               </button>
             </div>
 
-            {/* Formulario */}
             <form onSubmit={handleSubmit} className="p-6">
               <div className="space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -559,7 +596,6 @@ export function ProductoPage() {
                   )}
                 </div>
 
-                {/* ✅ Campo de Precio */}
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">
                     Precio <span className="text-red-500">*</span>
@@ -570,7 +606,7 @@ export function ProductoPage() {
                       type="number"
                       name="precio"
                       placeholder="0.00"
-                      value={formData.precio}
+                      value={formData.precio || ''}
                       onChange={handleInputChange}
                       step="0.01"
                       min="0"
@@ -669,7 +705,6 @@ export function ProductoPage() {
                 </div>
               </div>
 
-              {/* Botones */}
               <div className="mt-6 flex justify-end gap-3">
                 <button
                   type="button"

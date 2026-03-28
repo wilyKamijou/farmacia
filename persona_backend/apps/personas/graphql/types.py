@@ -28,9 +28,17 @@ class CategoriaType(DjangoObjectType):
 
 
 class ProductoType(DjangoObjectType):
+    # Sobrescribir el campo precio para que sea Float en lugar de Decimal
+    precio = graphene.Float()
+    
     class Meta:
         model = Producto
-        fields = "__all__"
+        fields = ('id', 'nombre_pr', 'nombre_tc', 'fecha_fab', 'fecha_venc', 
+                  'descripcion_pr', 'concentracion_qm', 'composicion_qm', 'categoria')
+    
+    def resolve_precio(self, info):
+        # Convertir Decimal a float
+        return float(self.precio) if self.precio else 0.0
 
 
 class AlmacenType(DjangoObjectType):

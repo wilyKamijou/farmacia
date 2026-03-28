@@ -13,7 +13,7 @@ export interface Producto {
   descripcionPr?: string;
   concentracionQm?: string;
   composicionQm?: string;
-  precio?: number;  // 👈 AGREGAR precio al tipo Producto
+  precio: number;  // 👈 AGREGAR precio al tipo Producto
   categoria: Categoria;
 }
 
@@ -42,7 +42,7 @@ export interface CreateProductoVariables {
   descripcionPr?: string;
   concentracionQm?: string;
   composicionQm?: string;
-  precio?: number;  // 👈 AGREGAR precio al tipo de variables (puede ser string para enviar al backend)
+  precio: number;  // 👈 AGREGAR precio al tipo de variables (puede ser string para enviar al backend)
 }
 
 export interface UpdateProductoResponse {
@@ -50,6 +50,21 @@ export interface UpdateProductoResponse {
     producto: Producto;
     ok: boolean;
     mensaje: string;
+  };
+}
+interface ProductoCompleto {
+  id: string;
+  nombrePr: string;
+  nombreTc: string;
+  fechaFab: string;
+  fechaVenc: string;
+  descripcionPr?: string;
+  concentracionQm?: string;
+  composicionQm?: string;
+  precio: number;  // ← Agregar precio como número
+  categoria: {
+    id: string;
+    nombreCt: string;
   };
 }
 

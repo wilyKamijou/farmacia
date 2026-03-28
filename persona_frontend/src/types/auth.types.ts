@@ -334,7 +334,7 @@ export interface Producto {
   descripcionPr?: string;
   concentracionQm?: string;
   composicionQm?: string;
-  precio: number;  // ✅ Agregar precio
+  precio?: number;  // ✅ Número, no opcional
   categoria: Categoria;
 }
 

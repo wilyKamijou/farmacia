@@ -112,7 +112,7 @@ const CREATE_PRODUCTO = gql`
     $fechaFab: Date!
     $fechaVenc: Date!
     $categoriaId: ID!
-    $precio: Decimal!
+    $precio: Float!  # ← Cambiar de Decimal a Float
     $descripcionPr: String
     $concentracionQm: String
     $composicionQm: String
@@ -203,6 +203,7 @@ interface ProductoCompleto {
   descripcionPr?: string;
   concentracionQm?: string;
   composicionQm?: string;
+  precio: number;  // ← Agregar precio como número
   categoria: {
     id: string;
     nombreCt: string;
@@ -339,16 +340,36 @@ const [createProducto] = useMutation<CrearProductoResponse>(CREATE_PRODUCTO);
   };
 
   // Guardar producto
- const handleSaveProducto = async (data: any) => {
+ // En Inventario.tsx, actualizar handleSaveProducto
+const handleSaveProducto = async (data: any) => {
   console.log('=== DATOS A ENVIAR AL BACKEND ===');
   console.log(JSON.stringify(data, null, 2));
   console.log('Tipo de precio:', typeof data.precio);
+  console.log('Valor del precio:', data.precio);
+  
+  // Validar precio
+  if (data.precio === undefined || data.precio === null || data.precio === '') {
+    alert('El precio es obligatorio');
+    return;
+  }
+  
+  const precioNumerico = parseFloat(data.precio);
+  if (isNaN(precioNumerico) || precioNumerico <= 0) {
+    alert('El precio debe ser un número mayor a 0');
+    return;
+  }
   
   try {
-    const { data: result } = await createProducto({ variables: data });
+    const variables = {
+      ...data,
+      precio: precioNumerico  // Asegurar que sea número
+    };
+    
+    const { data: result } = await createProducto({ variables });
     console.log('Respuesta:', result);
+    
     if (result?.crearProducto?.ok) {
-      alert('Producto creado');
+      alert('Producto creado exitosamente');
       refetchProductos();
       setShowModal(null);
     } else {
@@ -356,9 +377,9 @@ const [createProducto] = useMutation<CrearProductoResponse>(CREATE_PRODUCTO);
     }
   } catch (err) {
     console.error('Error detallado:', err);
-    alert('Error al crear producto');
+    alert('Error al crear producto. Revisa la consola para más detalles.');
   }
-};  
+}; 
 
   // Elimina la variable nextId y usa esto en su lugar:
 

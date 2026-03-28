@@ -544,7 +544,7 @@ class CrearProducto(graphene.Mutation):
         concentracion_qm = graphene.String()
         composicion_qm = graphene.String()
         categoria_id = graphene.ID(required=True)
-        precio = graphene.Decimal(required=True)
+        precio = graphene.Float(required=True)
 
     producto = graphene.Field(ProductoType)
     ok = graphene.Boolean()
@@ -616,7 +616,7 @@ class ActualizarProducto(graphene.Mutation):
         concentracion_qm = graphene.String()
         composicion_qm = graphene.String()
         categoria_id = graphene.ID()
-        precio = graphene.Decimal()  # 👈 Agregar precio como argumento opcional
+        precio = graphene.Float()  # 👈 Agregar precio como argumento opcional
     
     producto = graphene.Field(ProductoType)
     ok = graphene.Boolean()
@@ -631,7 +631,7 @@ class ActualizarProducto(graphene.Mutation):
                 producto.categoria = categoria
             
             campos_permitidos = ['nombre_pr', 'nombre_tc', 'fecha_fab', 'fecha_venc',
-                                 'descripcion_pr', 'concentracion_qm', 'composicion_qm']
+                                 'descripcion_pr', 'concentracion_qm', 'composicion_qm', 'precio']
             for key in campos_permitidos:
                 if key in kwargs and kwargs[key] is not None:
                     setattr(producto, key, kwargs[key])
